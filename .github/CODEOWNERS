@@ -1,3 +1,9 @@
-# Aristeu será o revisor principal
-* @AristeuZH
+# Regra Padrão: Todos os arquivos do projeto exigem revisão de pelo menos um membro da equipe de desenvolvimento
+# Substitua @username pelos nomes de usuário reais dos 4 desenvolvedores.
+* @P4TRIIICK @lucasfbegnini @superchokkk @AristeuZH
 
+# Documentação pode ser revisada por qualquer um, mas o Aristeu é o dono principal
+/docs/ @AristeuZH
+
+# Mudanças críticas no workflow de CI precisam de uma revisão mais específica
+/.github/workflows/ @AristeuZH @P4TRIIICK
