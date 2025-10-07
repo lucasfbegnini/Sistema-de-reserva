@@ -1,0 +1,45 @@
+openapi: 3.0.0
+info:
+  title: API do Sistema de Reserva
+  description: Documentação da API para o sistema de reserva.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Servidor de desenvolvimento
+paths:
+  /:
+    get:
+      summary: Rota principal da aplicação
+      description: Retorna uma mensagem de boas-vindas ou status inicial da API.
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Hello World!"
+  /health:
+    get:
+      summary: Verificação de Saúde (Health Check)
+      description: Retorna o status de saúde da aplicação. Útil para monitoramento.
+      responses:
+        '200':
+          description: A aplicação está saudável e funcionando.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  info:
+                    type: object
+                  error:
+                    type: object
+                  details:
+                    type: object

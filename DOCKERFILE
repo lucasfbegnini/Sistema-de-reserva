@@ -1,0 +1,39 @@
+# ---- Estágio 1: Builder ----
+# Usa uma imagem Node completa para instalar dependências e compilar o projeto
+FROM node:20 AS builder
+
+# Define o diretório de trabalho dentro do container
+WORKDIR /usr/src/app
+
+# Copia os arquivos de gerenciamento de pacotes
+COPY package*.json ./
+
+# Instala TODAS as dependências, incluindo as de desenvolvimento (necessárias para o build)
+RUN npm ci
+
+# Copia todo o código fonte do projeto
+COPY . .
+
+# Compila o código TypeScript para JavaScript
+RUN npm run build
+
+# ---- Estágio 2: Produção ----
+# Usa uma imagem Node "slim", que é muito menor e mais segura
+FROM node:20-slim
+
+WORKDIR /usr/src/app
+
+# Copia os arquivos de gerenciamento de pacotes novamente
+COPY package*.json ./
+
+# Instala APENAS as dependências de produção
+RUN npm ci --omit=dev
+
+# Copia o código compilado do estágio 'builder'
+COPY --from=builder /usr/src/app/dist ./dist
+
+# Expõe a porta que sua aplicação NestJS usa (padrão é 3000)
+EXPOSE 3000
+
+# Comando para iniciar a aplicação em produção
+CMD [ "node", "dist/main.js" ]

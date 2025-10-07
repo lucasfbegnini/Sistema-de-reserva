@@ -1,10 +1,13 @@
 name: CI
+
 on:
   pull_request:
     branches: [ main ]
   push:
     branches: [ main ]
+
 jobs:
+  # SEUS JOBS ATUAIS (sem alteração)
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -14,15 +17,7 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npm run lint --if-present
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npm run build --if-present
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -32,3 +27,88 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npm test --if-present
+
+  # NOVO JOB: VERIFICA BREAKING CHANGES NA API
+  openapi-diff:
+    runs-on: ubuntu-latest
+    # Este job só roda em Pull Requests, pois precisa de uma base para comparar
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Faz o fetch de todo o histórico para poder comparar com a branch base
+          fetch-depth: 0
+      - name: Check for breaking changes
+        uses: Mermade/openapi-diff-action@v2
+        with:
+          # ATENÇÃO: Altere aqui para o caminho do seu arquivo OpenAPI
+          base: 'origin/${{ github.base_ref }}:doc/openapi.yml' # <--- Altere aqui
+          head: 'HEAD:doc/openapi.yml'
+          fail-on-breaking: true # Falha o CI se encontrar uma breaking change
+
+  # NOVO JOB: CONSTRÓI A IMAGEM DOCKER
+  docker-build:
+    runs-on: ubuntu-latest
+    # Depende dos testes e lint para garantir que a imagem seja construída com código de qualidade
+    needs: [lint, test]
+    outputs:
+      # Gera um output com a tag da imagem para ser usada por outros jobs
+      image_tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # Gera uma tag única para a imagem baseada no SHA do commit
+          images: my-app-image # Dê um nome para sua imagem
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          # Apenas constrói a imagem e a carrega no runner, não a envia para um registro
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          push: false
+
+  # NOVO JOB: FAZ O SCAN DE VULNERABILIDADES NA IMAGEM
+  image-scan:
+    runs-on: ubuntu-latest
+    # Depende da construção da imagem
+    needs: docker-build
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          # Pega a tag da imagem gerada no job anterior
+          image-ref: ${{ needs.docker-build.outputs.image_tag }}
+          format: 'table'
+          # Falha o CI se encontrar vulnerabilidades CRÍTICAS ou ALTAS
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+  # NOVO JOB: GERA O SOFTWARE BILL OF MATERIALS (SBOM)
+  sbom:
+    runs-on: ubuntu-latest
+    # Depende da construção da imagem
+    needs: docker-build
+    steps:
+      - name: Generate SBOM
+        uses: anchore/syft-action@v0.15.10
+        with:
+          # Pega a tag da imagem gerada no job anterior
+          image: ${{ needs.docker-build.outputs.image_tag }}
+          format: spdx-json
+          output-file: "sbom.json"
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json

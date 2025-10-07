@@ -1,0 +1,15 @@
+# Dependências locais que não devem ser copiadas
+node_modules
+
+# Pasta de build, pois será gerada dentro do container
+dist
+
+# Arquivos do Git
+.git
+.gitignore
+
+# Logs do NPM
+npm-debug.log
+
+# Arquivos de ambiente que não devem ir para a imagem
+.env
