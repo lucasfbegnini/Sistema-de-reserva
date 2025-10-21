@@ -13,7 +13,7 @@ import { Role } from './enums/role.enum';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
- 
+  
   @Public()
   @Post()
   @ApiOperation({ summary: 'Cria um novo usuário' })
@@ -22,6 +22,7 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Lista todos os usuários' })
   @ApiResponse({ status: 200, description: 'A lista de usuários foi retornada com sucesso.', type: [User] })
@@ -29,6 +30,7 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Busca um usuário pelo ID' })
   @ApiResponse({ status: 200, description: 'O usuário foi retornado com sucesso.', type: User })
@@ -37,7 +39,9 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Atualiza um usuário' })
+  @Roles(Role.ADMIN) 
+  @UseGuards(RolesGuard) 
+  @ApiOperation({ summary: 'Atualiza um usuário (Apenas Admins)' })
   @ApiResponse({ status: 200, description: 'O usuário foi atualizado com sucesso.', type: User })
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(+id, updateUserDto);
