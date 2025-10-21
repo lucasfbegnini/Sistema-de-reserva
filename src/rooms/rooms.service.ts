@@ -71,7 +71,8 @@ export class RoomsService {
       ...updateRoomDto,
     });
     if (!room) {
-      throw new NotFoundException(`Sala com ID ${id} não encontrada.`);
+      // Mensagem padronizada
+      throw new NotFoundException(`Sala com ID ${id} não encontrado(a).`);
     }
     // Não permitir reativar uma sala desativada por este método
     if (room.status === RoomStatus.DEACTIVATED && updateRoomDto.status !== RoomStatus.DEACTIVATED) {
@@ -97,6 +98,7 @@ export class RoomsService {
 
   async addResourceToRoom(roomId: number, resourceId: number): Promise<Room> {
     const room = await this.findOne(roomId); // Busca a sala, já carregando os recursos atuais
+    // resourcesService.findOne agora lança a exceção padronizada se não encontrar o recurso.
     const resource = await this.resourcesService.findOne(resourceId); // Busca o recurso
 
     // Verifica se o recurso já está na sala para evitar duplicatas

@@ -24,7 +24,7 @@ export class ResourcesService {
   async findOne(id: number): Promise<Resource> {
     const resource = await this.resourcesRepository.findOneBy({ id });
     if (!resource) {
-      throw new NotFoundException(`Recurso com ID ${id} não encontrado.`);
+      throw new NotFoundException(`Recurso com ID ${id} não encontrado(a).`);
     }
     return resource;
   }
@@ -38,7 +38,7 @@ export class ResourcesService {
   async remove(id: number): Promise<void> {
     const result = await this.resourcesRepository.delete(id);
     if (result.affected === 0) {
-      throw new NotFoundException(`Recurso com ID ${id} não encontrado.`);
+      throw new NotFoundException(`Recurso com ID ${id} não encontrado(a).`);
     }
   }
 }
