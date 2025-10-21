@@ -1,18 +1,23 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { UsersModule } from '../users/users.module'; 
+import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
+import { ConfigModule, ConfigService } from '@nestjs/config'; // Importar ConfigModule e ConfigService
 
 @Module({
   imports: [
-    UsersModule, 
+    UsersModule,
     PassportModule,
-    JwtModule.register({
-      secret: 'SEU_SEGREDO_SUPER_SECRETO',
-      signOptions: { expiresIn: '60m' }, 
+    JwtModule.registerAsync({ // Mudar para registerAsync
+      imports: [ConfigModule], // Importar ConfigModule aqui também
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'), // Buscar o segredo do .env
+        signOptions: { expiresIn: '60m' },
+      }),
+      inject: [ConfigService], // Injetar ConfigService
     }),
   ],
   controllers: [AuthController],
