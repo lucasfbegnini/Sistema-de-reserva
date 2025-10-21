@@ -1,11 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder, MoreThanOrEqual, In } from 'typeorm';
+import { Repository, SelectQueryBuilder, In } from 'typeorm';
 import { Room, RoomStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { ResourcesService } from '../resources/resources.service'; // Importar ResourcesService
-import { Resource } from '../resources/entities/resource.entity';
 
 @Injectable()
 export class RoomsService {
