@@ -8,6 +8,10 @@ import { User } from './users/entities/user.entity';
 import { AuthModule } from './auth/auth.module'; 
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { RoomsModule } from './rooms/rooms.module';
+import { ResourcesModule } from './resources/resources.module';
+import { Room } from './rooms/entities/room.entity'; 
+import { Resource } from './resources/entities/resource.entity'; 
 
 @Module({
   imports: [
@@ -15,11 +19,13 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'database.sqlite',
-      entities: [User],
+      entities: [User, Room, Resource],
       synchronize: true,
     }),
     UsersModule,
-    AuthModule, 
+    AuthModule,
+    RoomsModule,
+    ResourcesModule, 
   ],
   controllers: [AppController],
   providers: [
