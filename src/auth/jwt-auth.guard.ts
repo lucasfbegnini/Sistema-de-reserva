@@ -1,22 +1,22 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { AuthGuard } from '@nestjs/passport';
-import { IS_PUBLIC_KEY } from './public.decorator';
+import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config'; // Importar ConfigService
 
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private reflector: Reflector) {
-    super();
+export class JwtAuthGuard extends PassportStrategy(Strategy) {
+  constructor(private configService: ConfigService) { // Injetar ConfigService
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: configService.get<string>('JWT_SECRET'), // Usar ConfigService para obter o segredo
+    });
   }
 
-  canActivate(context: ExecutionContext) {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) {
-      return true; // Permite o acesso se a rota for pública
-    }
-    return super.canActivate(context); // Caso contrário, usa a validação padrão do JWT
+  async validate(payload: any) {
+    // O payload é o que definimos no método login do auth.service
+    // { email: user.email, sub: user.id }
+    // O NestJS vai anexar este retorno ao objeto `request`
+    return { userId: payload.sub, email: payload.email, role: payload.role };
   }
 }
