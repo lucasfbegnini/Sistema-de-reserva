@@ -7,12 +7,12 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'O nome não pode ser vazio.' })
   name: string;
 
-  @ApiProperty({ example: 'john.doe@example.com', description: 'O e-mail do usuário' })
+  @ApiProperty({ example: 'john.doe@example.com', description: 'O e-mail único do usuário', format: 'email' })
   @IsEmail({}, { message: 'Por favor, forneça um email válido.' })
   @IsNotEmpty({ message: 'O email não pode ser vazio.' })
   email: string;
 
-  @ApiProperty({ example: 'strongPassword123', description: 'A senha do usuário' })
+  @ApiProperty({ example: 'strongPassword123', description: 'A senha do usuário (mínimo 8 caracteres)', format: 'password' })
   @IsString()
   @MinLength(8, { message: 'A senha deve ter no mínimo 8 caracteres.' })
   @IsNotEmpty({ message: 'A senha não pode ser vazia.' })
