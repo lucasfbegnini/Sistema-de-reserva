@@ -13,23 +13,30 @@ import { RoomsModule } from './rooms/rooms.module';
 import { ResourcesModule } from './resources/resources.module';
 import { Room } from './rooms/entities/room.entity';
 import { Resource } from './resources/entities/resource.entity';
+import { BookingsModule } from './bookings/bookings.module'; 
+import { Booking } from './bookings/entities/booking.entity';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ // Adicionar ConfigModule
       isGlobal: true, // Tornar as variáveis de ambiente disponíveis globalmente
     }),
+    EventEmitterModule.forRoot(),
     HealthModule,
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'database.sqlite',
-      entities: [User, Room, Resource],
+      entities: [User, Room, Resource, Booking],
       synchronize: true,
     }),
     UsersModule,
     AuthModule,
     RoomsModule,
     ResourcesModule,
+    BookingsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [
