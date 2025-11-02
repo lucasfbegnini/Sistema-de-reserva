@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Booking, BookingStatus } from './entities/booking.entity';
-import { Repository, LessThan, MoreThan, Between, FindOptionsOrder } from 'typeorm'; // Importar Between
+import { Repository, LessThan, MoreThan, Between } from 'typeorm'; // Importar Between
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RoomsService } from '../rooms/rooms.service';
 import { Role } from '../users/enums/role.enum';

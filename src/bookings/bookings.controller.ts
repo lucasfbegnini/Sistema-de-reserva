@@ -77,6 +77,8 @@ export class BookingsController {
   @ApiResponse({ status: 200, description: 'Lista de reservas ocupadas para o período.', type: [Booking] })
   @ApiResponse({ status: 400, description: 'Query de data inválida.' })
   @ApiResponse({ status: 401, description: 'Não autorizado.' })
+  @ApiQuery({ name: 'startDate', type: Date, description: 'Início do período de consulta' })
+  @ApiQuery({ name: 'endDate', type: Date, description: 'Fim do período de consulta' })
   @ApiResponse({ status: 404, description: 'Sala não encontrada.' })
   findAvailability(
     @Param('roomId', ParseIntPipe) roomId: number,
