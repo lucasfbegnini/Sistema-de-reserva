@@ -1,22 +1,27 @@
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config'; // Importar ConfigService
+// src/auth/jwt-auth.guard.ts
+import { Injectable, ExecutionContext } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_KEY } from './public.decorator';
 
 @Injectable()
-export class JwtAuthGuard extends PassportStrategy(Strategy) {
-  constructor(private configService: ConfigService) { // Injetar ConfigService
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET'), // Usar ConfigService para obter o segredo
-    });
+export class JwtAuthGuard extends AuthGuard('jwt') {
+  constructor(private reflector: Reflector) {
+    super();
   }
 
-  async validate(payload: any) {
-    // O payload é o que definimos no método login do auth.service
-    // { email: user.email, sub: user.id }
-    // O NestJS vai anexar este retorno ao objeto `request`
-    return { userId: payload.sub, email: payload.email, role: payload.role };
+  canActivate(context: ExecutionContext) {
+    // Verificar se a rota é pública usando o decorator @Public()
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    
+    if (isPublic) {
+      return true; // Permite acesso a rotas públicas
+    }
+
+    // Para rotas não públicas, executa a lógica padrão do AuthGuard('jwt')
+    return super.canActivate(context);
   }
 }
