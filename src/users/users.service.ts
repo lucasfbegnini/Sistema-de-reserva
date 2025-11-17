@@ -1,18 +1,63 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt'; 
+import { ConfigService } from '@nestjs/config';
+import { Role } from './enums/role.enum';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnApplicationBootstrap {
+  
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private configService: ConfigService,
   ) {}
 
+  async onApplicationBootstrap() {
+    await this.seedAdminUser();
+  }
+
+  private async seedAdminUser() {
+    const adminEmail = this.configService.get<string>('ADMIN_EMAIL');
+    const adminPassword = this.configService.get<string>('ADMIN_PASSWORD');
+    const adminName = this.configService.get<string>('ADMIN_NAME');
+
+    if (!adminEmail || !adminPassword || !adminName) {
+      this.logger.warn(
+        'Variáveis de ambiente do admin (ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME) não estão definidas. Pulando a criação do admin padrão.',
+      );
+      return;
+    }
+
+    const existingAdmin = await this.usersRepository.findOneBy({
+      email: adminEmail,
+    });
+
+    if (!existingAdmin) {
+      this.logger.log('Criando usuário admin padrão...');
+      
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      
+      const adminUser = this.usersRepository.create({
+        name: adminName,
+        email: adminEmail,
+        password: hashedPassword,
+        role: Role.ADMIN, // Definir o papel como ADMIN
+      });
+
+      await this.usersRepository.save(adminUser);
+      this.logger.log('Usuário admin padrão criado com sucesso.');
+    } else {
+      this.logger.log('Usuário admin padrão já existe.');
+    }
+  }
+  
   async create(createUserDto: CreateUserDto): Promise<User> { // 2. Transforme em um método assíncrono
     // 3. Criptografe a senha
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10); // O "10" é o custo do hash
