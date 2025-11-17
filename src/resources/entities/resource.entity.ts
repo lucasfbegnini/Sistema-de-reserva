@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToMany,
+  DeleteDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Room } from '../../rooms/entities/room.entity'; // Importe a entidade Room
@@ -38,6 +39,14 @@ export class Resource {
   @ManyToMany(() => Room, (room) => room.resources)
   rooms: Room[]; // Um recurso pode estar em várias salas
 
+  @Column({ nullable: true })
+  @ApiProperty({ description: 'ID do usuário que criou o recurso' })
+  createdById: number;
+
+  @Column({ nullable: true })
+  @ApiProperty({ description: 'ID do usuário que atualizou o recurso' })
+  updatedById: number;
+
   @CreateDateColumn()
   @ApiProperty()
   createdAt: Date;
@@ -45,4 +54,7 @@ export class Resource {
   @UpdateDateColumn()
   @ApiProperty()
   updatedAt: Date;
+
+  @DeleteDateColumn() // Soft delete
+  deletedAt: Date;
 }

@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Role } from '../enums/role.enum';
@@ -28,4 +28,23 @@ export class User {
   })
   @ApiProperty({ enum: Role, default: Role.USER })
   role: Role;
+  
+  @Column({ nullable: true })
+  @Exclude() // Auditoria
+  createdById: number;
+
+  @Column({ nullable: true })
+  @Exclude() // Auditoria
+  updatedById: number;
+
+  @CreateDateColumn()
+  @ApiProperty()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  @ApiProperty()
+  updatedAt: Date;
+
+  @DeleteDateColumn() // Soft delete
+  deletedAt: Date;
 }

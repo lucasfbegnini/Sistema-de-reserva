@@ -35,7 +35,7 @@ interface RequestWithUser extends Request {
   user: {
     userId: number;
     email: string;
-    role: string;
+    role: Role; // CORRIGIDO: Tipo Role importado de enums
   };
 }
 
