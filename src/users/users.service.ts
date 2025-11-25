@@ -5,12 +5,18 @@ import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt'; 
+import { ConfigService } from '@nestjs/config';
+import { Role } from './enums/role.enum';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnApplicationBootstrap {
+  
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private configService: ConfigService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
