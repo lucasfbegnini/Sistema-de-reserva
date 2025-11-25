@@ -46,6 +46,16 @@ export class Booking {
   @ApiProperty({ enum: BookingStatus, default: BookingStatus.CONFIRMED })
   status: BookingStatus;
 
+  // Auditoria: ID do usuário que criou a reserva
+  @Column({ nullable: true })
+  @ApiProperty({ description: 'ID do usuário que criou a reserva' })
+  createdById: number;
+
+  // Auditoria: ID do último usuário que atualizou a reserva
+  @Column({ nullable: true })
+  @ApiProperty({ description: 'ID do usuário que atualizou a reserva' })
+  updatedById: number;
+
   @CreateDateColumn()
   @ApiProperty()
   createdAt: Date;

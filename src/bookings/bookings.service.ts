@@ -8,18 +8,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Booking, BookingStatus } from './entities/booking.entity';
-import { Repository, LessThan, MoreThan, Between } from 'typeorm'; // Importar Between
+import { Repository, LessThan, MoreThan, Between } from 'typeorm';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RoomsService } from '../rooms/rooms.service';
 import { Role } from '../users/enums/role.enum';
 import { User } from '../users/entities/user.entity';
 import { RoomStatus } from 'src/rooms/entities/room.entity';
 import { QueryAvailabilityDto } from './dto/query-availability.dto';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import {
-  BOOKING_CREATED_EVENT,
-  BOOKING_CANCELLED_EVENT,
-} from '../notifications/notifications.service';
+// REMOVIDO: import { EventEmitter2 } from '@nestjs/event-emitter';
+// REMOVIDO: import { BOOKING_CREATED_EVENT, BOOKING_CANCELLED_EVENT } from '../notifications/notifications.service';
 
 // --- Constantes de Regra de Negócio ---
 const MIN_NOTICE_MINUTES = 15;
@@ -32,42 +29,29 @@ export class BookingsService {
     @InjectRepository(Booking)
     private bookingsRepository: Repository<Booking>,
     private roomsService: RoomsService,
-    private eventEmitter: EventEmitter2, 
+    // REMOVIDO: private eventEmitter: EventEmitter2, 
   ) {}
 
-  async create(createBookingDto: CreateBookingDto, user: any): Promise<Booking> {
+  async create(createBookingDto: CreateBookingDto, user: { userId: number; email: string; role: Role }): Promise<Booking> {
     const { roomId, startTime, endTime } = createBookingDto;
+    const { userId } = user;
 
-    // --- Início das Validações de Regra de Negócio ---
-
-    // 1. Validar se a data de término é posterior à de início
+    // ... (Validações de Regra de Negócio) ...
     if (endTime <= startTime) {
-      throw new BadRequestException(
-        'A data de término deve ser posterior à data de início',
-      );
+      throw new BadRequestException('A data de término deve ser posterior à data de início');
     }
-
-    // 2. Validar se a reserva não está sendo feita no passado
-    const minStartDate = new Date(Date.now() + MIN_NOTICE_MINUTES * 60000); // 15 minutos a partir de agora
+    const minStartDate = new Date(Date.now() + MIN_NOTICE_MINUTES * 60000);
     if (startTime < minStartDate) {
-      throw new BadRequestException(
-        `A reserva deve ser feita com pelo menos ${MIN_NOTICE_MINUTES} minutos de antecedência.`,
-      );
+      throw new BadRequestException(`A reserva deve ser feita com pelo menos ${MIN_NOTICE_MINUTES} minutos de antecedência.`);
     }
-
-    // 3. Validar a duração máxima da reserva
     const durationMs = endTime.getTime() - startTime.getTime();
     const durationHours = durationMs / (1000 * 60 * 60);
     if (durationHours > MAX_BOOKING_DURATION_HOURS) {
-      throw new BadRequestException(
-        `A duração máxima da reserva é de ${MAX_BOOKING_DURATION_HOURS} horas.`,
-      );
+      throw new BadRequestException(`A duração máxima da reserva é de ${MAX_BOOKING_DURATION_HOURS} horas.`);
     }
-    
     // --- Fim das Validações de Regra de Negócio ---
 
 
-    // 4. Validar se a sala existe e está disponível
     const room = await this.roomsService.findOne(roomId); 
     if (room.status !== RoomStatus.AVAILABLE) {
       throw new ConflictException(
@@ -75,7 +59,6 @@ export class BookingsService {
       );
     }
 
-    // 5. Verificar conflitos de horário
     const conflict = await this.findConflict(roomId, startTime, endTime);
     if (conflict) {
       throw new ConflictException(
@@ -83,18 +66,17 @@ export class BookingsService {
       );
     }
 
-    // 6. Criar e salvar a reserva
     const newBooking = this.bookingsRepository.create({
       room: room,
-      user: { id: user.userId } as User, // Associa ao usuário autenticado
+      user: { id: userId } as User,
       startTime,
       endTime,
       status: BookingStatus.CONFIRMED,
+      createdById: userId, // AUDITORIA: Quem criou
+      updatedById: userId, // AUDITORIA: Quem atualizou pela última vez
     });
 
     const savedBooking = await this.bookingsRepository.save(newBooking);
-
-    this.eventEmitter.emit(BOOKING_CREATED_EVENT, savedBooking);
 
     return savedBooking;
   }
@@ -121,7 +103,6 @@ export class BookingsService {
       order: {
         startTime: order,
       },
-      // Pode ser útil adicionar paginação aqui no futuro
     });
   }
 
@@ -144,10 +125,7 @@ export class BookingsService {
       where: {
         room: { id: roomId },
         status: BookingStatus.CONFIRMED,
-        // Encontra reservas que comecem ou terminem dentro do período de consulta
         startTime: Between(startDate, endDate),
-        // Ou endTime: Between(startDate, endDate),
-        // A lógica de conflito (startTime < endDate && endTime > startDate) também funciona bem aqui
       },
       order: {
         startTime: 'ASC',
@@ -162,7 +140,6 @@ export class BookingsService {
       throw new NotFoundException(`Reserva com ID ${id} não encontrada.`);
     }
 
-    // Admin pode ver tudo, usuário comum só pode ver suas próprias reservas
     if (user.role !== Role.ADMIN && booking.user.id !== user.userId) {
       throw new ForbiddenException(
         'Você não tem permissão para ver esta reserva.',
@@ -173,10 +150,10 @@ export class BookingsService {
   }
 
   // Cancela (soft delete) uma reserva
-  async cancel(id: number, user: any): Promise<void> {
-    const booking = await this.findOne(id, user); // findOne já faz a checagem de permissão
+  async cancel(id: number, user: { userId: number; email: string; role: Role }): Promise<void> {
+    const { userId } = user;
+    const booking = await this.findOne(id, user);
 
-    // Não permitir cancelamento de reserva que já passou
     if (new Date() > new Date(booking.startTime)) {
       throw new BadRequestException(
         'Não é possível cancelar uma reserva que já ocorreu.',
@@ -184,22 +161,20 @@ export class BookingsService {
     }
 
     booking.status = BookingStatus.CANCELLED;
+    booking.updatedById = userId; // AUDITORIA: Quem cancelou
     await this.bookingsRepository.save(booking);
-
-    this.eventEmitter.emit(BOOKING_CANCELLED_EVENT, booking);
   }
 
   /**
    * Lógica principal de conflito.
-   * (NovaStartTime < ReservaEndTime) E (NovaEndTime > ReservaStartTime)
    */
   private async findConflict(roomId: number, startTime: Date, endTime: Date) {
     return this.bookingsRepository.findOne({
       where: {
         room: { id: roomId },
-        status: BookingStatus.CONFIRMED, // Só checa contra reservas confirmadas
-        startTime: LessThan(endTime), // startTime < newEndTime
-        endTime: MoreThan(startTime), // endTime > newStartTime
+        status: BookingStatus.CONFIRMED,
+        startTime: LessThan(endTime),
+        endTime: MoreThan(startTime),
       },
     });
   }

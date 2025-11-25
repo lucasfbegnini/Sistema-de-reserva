@@ -54,6 +54,16 @@ export class Room {
   @ApiProperty({ type: () => [Resource], description: 'Recursos disponíveis na sala' })
   resources: Resource[]; // Uma sala pode ter vários recursos
 
+  // Auditoria: ID do usuário que criou a sala
+  @Column({ nullable: true })
+  @ApiProperty({ description: 'ID do usuário que criou a sala' })
+  createdById: number;
+
+  // Auditoria: ID do último usuário que atualizou a sala
+  @Column({ nullable: true })
+  @ApiProperty({ description: 'ID do usuário que atualizou a sala' })
+  updatedById: number;
+
   @CreateDateColumn()
   @ApiProperty()
   createdAt: Date;
