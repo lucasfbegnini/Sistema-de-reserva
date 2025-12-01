@@ -27,7 +27,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     HealthModule,
     TypeOrmModule.forRoot({
       type: 'sqlite',
-      database: 'database.sqlite',
+      database: process.env.DB_PATH || 'database.sqlite',
       entities: [User, Room, Resource, Booking],
       synchronize: true,
     }),

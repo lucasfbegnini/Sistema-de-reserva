@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Sua aplicação principal (Raiz)
+  monolith:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - JWT_SECRET=SEU_SEGREDO_SUPER_SECRETO
+      - DB_PATH=/usr/src/app/data/database.sqlite
+    volumes:
+      - ./data:/usr/src/app/data
+    depends_on:
+      - auth-service
+    networks:
+      - app-network
+
+  # Seu novo microsserviço
+  auth-service:
+    build:
+      context: ./packages/auth-service
+      dockerfile: Dockerfile
+    expose:
+      - "3001"
+    environment:
+      - JWT_SECRET=SEU_SEGREDO_SUPER_SECRETO
+      - DB_PATH=/usr/src/app/data/database.sqlite
+    volumes:
+      - ./data:/usr/src/app/data
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
