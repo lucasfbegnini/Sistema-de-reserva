@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Inject, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Inject, HttpException} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { LoginAuthDto } from './dto/login-auth.dto';
