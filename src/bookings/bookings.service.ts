@@ -1,10 +1,12 @@
 // src/bookings/bookings.service.ts
 import {
   Injectable,
+  Inject,
   ConflictException,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Booking, BookingStatus } from './entities/booking.entity';
@@ -12,9 +14,10 @@ import { Repository, LessThan, MoreThan, Between } from 'typeorm';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RoomsService } from '../rooms/rooms.service';
 import { Role } from '../users/enums/role.enum';
-import { User } from '../users/entities/user.entity';
+import { User } from '../users/entities/user.entity'; 
 import { RoomStatus } from 'src/rooms/entities/room.entity';
 import { QueryAvailabilityDto } from './dto/query-availability.dto';
+import { ClientProxy } from '@nestjs/microservices';
 // REMOVIDO: import { EventEmitter2 } from '@nestjs/event-emitter';
 // REMOVIDO: import { BOOKING_CREATED_EVENT, BOOKING_CANCELLED_EVENT } from '../notifications/notifications.service';
 
@@ -25,11 +28,12 @@ const MAX_BOOKING_DURATION_HOURS = 4;
 
 @Injectable()
 export class BookingsService {
+  private readonly logger = new Logger(BookingsService.name);
   constructor(
     @InjectRepository(Booking)
     private bookingsRepository: Repository<Booking>,
     private roomsService: RoomsService,
-    // REMOVIDO: private eventEmitter: EventEmitter2, 
+    @Inject('NOTIFICATIONS_SERVICE') private client: ClientProxy,
   ) {}
 
   async create(createBookingDto: CreateBookingDto, user: { userId: number; email: string; role: Role }): Promise<Booking> {
@@ -77,6 +81,23 @@ export class BookingsService {
     });
 
     const savedBooking = await this.bookingsRepository.save(newBooking);
+
+    const eventPayload = {
+      id: savedBooking.id,
+      startTime: savedBooking.startTime.toISOString(),
+      endTime: savedBooking.endTime.toISOString(),
+      user: {
+        email: user.email,
+      },
+      room: {
+        name: room.name,
+      }
+    };
+
+    this.client.emit('booking_created', eventPayload).subscribe({
+      next: () => this.logger.log(`Evento de reserva ${savedBooking.id} enviado com sucesso.`),
+      error: (err) => this.logger.error(`Falha ao enviar evento para notificações: ${err.message}`),
+    });
 
     return savedBooking;
   }
@@ -163,6 +184,23 @@ export class BookingsService {
     booking.status = BookingStatus.CANCELLED;
     booking.updatedById = userId; // AUDITORIA: Quem cancelou
     await this.bookingsRepository.save(booking);
+
+    const eventPayload = {
+      id: booking.id,
+      startTime: booking.startTime.toISOString(),
+      endTime: booking.endTime.toISOString(),
+      user: {
+        email: user.email,
+      },
+      room: {
+        name: booking.room.name,
+      }
+    };
+
+    this.client.emit('booking_cancelled', eventPayload).subscribe({
+      next: () => this.logger.log(`Evento de cacelamento de reserva ${booking.id} enviado com sucesso.`),
+      error: (err) => this.logger.error(`Falha ao enviar evento para notificações: ${err.message}`),
+    });
   }
 
   /**

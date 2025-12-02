@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Sua aplicação principal (Raiz)
+  monolith:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - JWT_SECRET=SEU_SEGREDO_SUPER_SECRETO
+      - DB_PATH=/usr/src/app/data/database.sqlite
+      - AUTH_SERVICE_HOST=auth-service
+      - NOTIFICATIONS_SERVICE_HOST=notifications-service
+    volumes:
+      - ./data:/usr/src/app/data
+    depends_on:
+      - auth-service
+    networks:
+      - app-network
+
+  auth-service:
+    build:
+      context: ./packages/auth-service
+      dockerfile: Dockerfile
+    expose:
+      - "3001"
+    environment:
+      - JWT_SECRET=SEU_SEGREDO_SUPER_SECRETO
+      - DB_PATH=/usr/src/app/data/database.sqlite
+    volumes:
+      - ./data:/usr/src/app/data
+    networks:
+      - app-network
+
+  notifications-service:
+    build:
+      context: ./packages/notification-service 
+      dockerfile: Dockerfile
+    expose:
+      - "3002"
+    environment:
+      - MAIL_HOST=smtp.exemplo.com
+      - MAIL_PORT=587
+      - MAIL_SECURE=false
+      - MAIL_USER=admin@exemplo.com
+      - MAIL_PASS=adminpassword123
+      - MAIL_FROM="Sistema de Reserva <no-reply@exemplo.com>"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
