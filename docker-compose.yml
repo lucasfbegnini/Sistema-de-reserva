@@ -11,6 +11,8 @@ services:
     environment:
       - JWT_SECRET=SEU_SEGREDO_SUPER_SECRETO
       - DB_PATH=/usr/src/app/data/database.sqlite
+      - AUTH_SERVICE_HOST=auth-service
+      - NOTIFICATIONS_SERVICE_HOST=notifications-service
     volumes:
       - ./data:/usr/src/app/data
     depends_on:
@@ -18,7 +20,6 @@ services:
     networks:
       - app-network
 
-  # Seu novo microsserviço
   auth-service:
     build:
       context: ./packages/auth-service
@@ -30,6 +31,22 @@ services:
       - DB_PATH=/usr/src/app/data/database.sqlite
     volumes:
       - ./data:/usr/src/app/data
+    networks:
+      - app-network
+
+  notifications-service:
+    build:
+      context: ./packages/notification-service 
+      dockerfile: Dockerfile
+    expose:
+      - "3002"
+    environment:
+      - MAIL_HOST=smtp.exemplo.com
+      - MAIL_PORT=587
+      - MAIL_SECURE=false
+      - MAIL_USER=admin@exemplo.com
+      - MAIL_PASS=adminpassword123
+      - MAIL_FROM="Sistema de Reserva <no-reply@exemplo.com>"
     networks:
       - app-network
 

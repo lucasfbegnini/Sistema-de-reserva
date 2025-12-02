@@ -1,9 +1,23 @@
-FROM node:20-alpine
-WORKDIR /app
+FROM node:20 AS builder
+
+WORKDIR /usr/src/app
+
 COPY package*.json ./
+
 RUN npm install
-# Copia tudo da raiz
+
 COPY . .
+
 RUN npm run build
-EXPOSE 3000
-CMD ["node", "dist/main"]
+
+FROM node:20-slim
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN npm install --only=production
+
+COPY --from=builder /usr/src/app/dist ./dist
+
+CMD ["node", "dist/src/main"]

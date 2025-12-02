@@ -16,7 +16,6 @@ import { Resource } from './resources/entities/resource.entity';
 import { BookingsModule } from './bookings/bookings.module'; 
 import { Booking } from './bookings/entities/booking.entity';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -36,7 +35,6 @@ import { NotificationsModule } from './notifications/notifications.module';
     RoomsModule,
     ResourcesModule,
     BookingsModule,
-    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [
