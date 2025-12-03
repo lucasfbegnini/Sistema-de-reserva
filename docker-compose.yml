@@ -49,6 +49,38 @@ services:
       - MAIL_FROM="Sistema de Reserva <no-reply@exemplo.com>"
     networks:
       - app-network
+  
+  resources-service:
+    build:
+      context: ./packages/resources-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - DB_PATH_RESOURCES=/app/data/resources.sqlite
+    volumes:
+      - ./packages/resources-service:/app
+      - /app/node_modules
+    networks:
+      - app-network
+
+  rooms-service:
+    build:
+      context: ./packages/rooms-service
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - DB_PATH_ROOMS=/app/data/rooms.sqlite
+    volumes:
+      # Monta o código local para dentro do container (Hot Reload)
+      - ./packages/rooms-service:/app
+      - /app/node_modules
+    networks:
+      - app-network
+
 
 networks:
   app-network:
