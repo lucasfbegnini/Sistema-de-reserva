@@ -19,6 +19,14 @@ import { Booking } from './entities/booking.entity';
           port: 3004,
         },
       },
+      {
+        name: 'NOTIFICATIONS_SERVICE',
+        transport: Transport.TCP,
+        options: { 
+          host: process.env.NOTIFICATION_HOST || 'notification-service', 
+          port: 3001 // Porta padrão ou a que você definiu no microservice
+        },
+      },
     ]),
   ],
   controllers: [BookingsController],

@@ -15,8 +15,8 @@ export class UsersService implements OnApplicationBootstrap {
   private readonly logger = new Logger(UsersService.name);
 
   constructor(
-    @InjectRepository(User)
     private configService: ConfigService,
+    @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
   ) {}
 

@@ -51,6 +51,9 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_NAME=users_db
+      - ADMIN_NAME=Administrador
+      - ADMIN_EMAIL=admin@admin.com
+      - ADMIN_PASSWORD=admin123
     depends_on:
       - postgres
     networks:
