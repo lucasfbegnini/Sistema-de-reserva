@@ -19,6 +19,7 @@ services:
     ports: ["3000:3000"]
     environment:
       - AUTH_HOST=auth-service
+      - NOTIFICATION_HOST=notification-service
       - USERS_HOST=users-service
       - ROOMS_HOST=rooms-service
       - RESOURCES_HOST=resources-service

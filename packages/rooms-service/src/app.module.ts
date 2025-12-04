@@ -1,10 +1,22 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
+import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST, // Lerá 'postgres' do docker-compose
+      port: 5432,
+      username: process.env.POSTGRES_USER || 'admin', // Padronize com o docker-compose
+      password: process.env.POSTGRES_PASSWORD || 'admin',
+      database: process.env.DB_NAME,
+      autoLoadEntities: true,
+      synchronize: true, // Use false em produção
+    }),
+    RoomsModule,
+  ],
 })
 export class AppModule {}
