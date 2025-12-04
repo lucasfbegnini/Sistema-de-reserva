@@ -18,6 +18,7 @@ export enum BookingStatus {
 
 @Entity()
 export class Booking {
+  @PrimaryGeneratedColumn()
   @ApiProperty()
   id: number;
 

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Room } from '../../rooms/entities/room.entity';
+import { PrimaryGeneratedColumn } from 'typeorm';
 
 export enum ResourceType {
   PROJECTOR = 'PROJECTOR',
@@ -10,6 +11,7 @@ export enum ResourceType {
 }
 
 export class Resource {
+  @PrimaryGeneratedColumn()
   @ApiProperty()
   id: number;
 

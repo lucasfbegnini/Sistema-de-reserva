@@ -18,6 +18,7 @@ export enum RoomStatus {
 
 @Entity()
 export class Room {
+  @PrimaryGeneratedColumn()
   @ApiProperty()
   id: number;
 

@@ -23,6 +23,7 @@ services:
       - ROOMS_HOST=rooms-service
       - RESOURCES_HOST=resources-service
       - BOOKINGS_HOST=bookings-service
+      - JWT_SECRET=sua_chave_super_secreta_aqui
     depends_on:
       - auth-service
       - users-service
@@ -38,6 +39,7 @@ services:
       - DB_HOST=postgres
       - DB_NAME=auth_db
       - USERS_HOST=users-service
+      - JWT_SECRET=sua_chave_super_secreta_aqui
     depends_on:
       - postgres
     networks:
