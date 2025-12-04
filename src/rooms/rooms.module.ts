@@ -1,17 +1,22 @@
 import { Module } from '@nestjs/common';
-import { RoomsService } from './rooms.service';
 import { RoomsController } from './rooms.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Room } from './entities/room.entity';
-import { ResourcesModule } from '../resources/resources.module'; // 1. Importe o ResourcesModule
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Room]),
-    ResourcesModule, // 2. Adicione o ResourcesModule aqui
+    ClientsModule.register([
+      {
+        name: 'ROOMS_SERVICE', 
+        transport: Transport.TCP,
+        options: {
+          host: process.env.ROOMS_HOST || 'rooms-service',
+          port: 3004,
+        },
+      },
+    ]),
   ],
   controllers: [RoomsController],
-  providers: [RoomsService],
-  exports: [RoomsService], // Boa prática exportar o serviço
+  providers: [],
+  exports: [ClientsModule],
 })
 export class RoomsModule {}

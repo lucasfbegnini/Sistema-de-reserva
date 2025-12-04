@@ -1,28 +1,23 @@
-// src/bookings/bookings.module.ts
 import { Module } from '@nestjs/common';
-import { BookingsService } from './bookings.service';
 import { BookingsController } from './bookings.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Booking } from './entities/booking.entity';
-import { RoomsModule } from '../rooms/rooms.module'; // Importante
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Booking]),
-    RoomsModule, // Precisamos do RoomsService para validar a sala
+    // Conecta ao Bookings Microservice na porta 3006
     ClientsModule.register([
       {
-        name: 'NOTIFICATIONS_SERVICE', // Nome para injetar depois
+        name: 'BOOKINGS_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: 'notifications-service', // Se usar Docker, coloque o nome do serviço no docker-compose (ex: 'notification-service')
-          port: 3002,
+          host: process.env.BOOKINGS_HOST || 'bookings-service',
+          port: 3006,
         },
       },
     ]),
   ],
   controllers: [BookingsController],
-  providers: [BookingsService],
+  providers: [], // VAZIO: Sem service local
+  exports: [ClientsModule],
 })
 export class BookingsModule {}

@@ -1,15 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, HttpCode, HttpStatus, Req } from '@nestjs/common';
-import { ResourcesService } from './resources.service';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpCode, HttpStatus, Req, Inject} from '@nestjs/common';
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { UpdateResourceDto } from './dto/update-resource.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { Role } from '../users/enums/role.enum'; // Importar Role
-import { Resource } from './entities/resource.entity';
+import { Role } from '../users/enums/role.enum';
 import { Public } from '../auth/public.decorator';
 import { Request } from 'express';
+import { ClientProxy } from '@nestjs/microservices';
 
 // Interface para estender o Request do Express e incluir nosso usuário
 interface RequestWithUser extends Request {
@@ -25,55 +24,47 @@ interface RequestWithUser extends Request {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('v1/catalog/resources')
 export class ResourcesController {
-  constructor(private readonly resourcesService: ResourcesService) {}
+  constructor(
+    @Inject('RESOURCES_SERVICE') private readonly client: ClientProxy
+  ) {}
 
   @Post()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Cria um novo recurso (Admin)' })
-  @ApiResponse({ status: 201, description: 'Recurso criado com sucesso.', type: Resource })
-  @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  @ApiResponse({ status: 403, description: 'Acesso negado (perfil incorreto).' })
   create(@Body() createResourceDto: CreateResourceDto, @Req() req: RequestWithUser) {
-    return this.resourcesService.create(createResourceDto, req.user.userId);
+    // Manda mensagem para o microserviço
+    return this.client.send({ cmd: 'create_resource' }, { 
+      createResourceDto, 
+      userId: req.user.userId 
+    });
   }
 
   @Public()
   @Get()
   @ApiOperation({ summary: 'Lista todos os recursos disponíveis' })
-  @ApiResponse({ status: 200, description: 'Lista de recursos retornada.', type: [Resource] })
-  findAll() {
-    return this.resourcesService.findAll();
+  findAll(){
+    return this.client.send({ cmd: 'find_all_resources' }, {});
   }
 
   @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Busca um recurso pelo ID' })
-  @ApiResponse({ status: 200, description: 'Recurso retornado.', type: Resource })
-  @ApiResponse({ status: 404, description: 'Recurso não encontrado.' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.resourcesService.findOne(id);
+  findOne(id: number) {
+    return this.client.send({ cmd: 'find_one_resource' }, { id });
   }
 
   @Patch(':id')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Atualiza um recurso existente (Admin)' })
-  @ApiResponse({ status: 200, description: 'Recurso atualizado com sucesso.', type: Resource })
-  @ApiResponse({ status: 404, description: 'Recurso não encontrado.' })
-  @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  @ApiResponse({ status: 403, description: 'Acesso negado.' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateResourceDto: UpdateResourceDto, @Req() req: RequestWithUser) {
-    return this.resourcesService.update(id, updateResourceDto, req.user.userId);
+  update(id: number, updateResourceDto: UpdateResourceDto, @Req() req: RequestWithUser) {
+    return this.client.send({ cmd: 'update_resource' }, { id, updateResourceDto, userId: req.user.userId });
   }
 
   @Delete(':id')
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remove um recurso (Admin)' })
-  @ApiResponse({ status: 204, description: 'Recurso removido com sucesso.' })
-  @ApiResponse({ status: 404, description: 'Recurso não encontrado.' })
-  @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  @ApiResponse({ status: 403, description: 'Acesso negado.' })
-  remove(@Param('id', ParseIntPipe) id: number, @Req() req: RequestWithUser) {
-    return this.resourcesService.remove(id, req.user.userId);
+  remove(id: number, @Req() req: RequestWithUser) {
+    return this.client.send({ cmd: 'remove_resource' }, { id, userId: req.user.userId });
   }
 }

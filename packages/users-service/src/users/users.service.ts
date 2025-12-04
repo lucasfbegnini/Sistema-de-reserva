@@ -1,4 +1,5 @@
 import { Injectable, OnApplicationBootstrap, Logger, NotFoundException } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -15,8 +16,8 @@ export class UsersService implements OnApplicationBootstrap {
 
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>,
     private configService: ConfigService,
+    private readonly usersRepository: Repository<User>,
   ) {}
 
   async onApplicationBootstrap() {
@@ -63,7 +64,7 @@ export class UsersService implements OnApplicationBootstrap {
 
     const user = this.usersRepository.create({
       ...createUserDto,
-      password: hashedPassword,
+      password: hashedPassword
     });
     
     const savedUser = await this.usersRepository.save(user);
@@ -82,7 +83,7 @@ export class UsersService implements OnApplicationBootstrap {
   async findOne(id: number): Promise<User> {
     const user = await this.usersRepository.findOneBy({ id });
     if (!user) {
-        throw new NotFoundException(`User with ID ${id} not found or is deleted.`);
+        throw new RpcException(`User with ID ${id} not found or is deleted.`);
     }
     return user;
   }

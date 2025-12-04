@@ -2,32 +2,36 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { JwtStrategy } from './jwt.strategy';
+import { LocalStrategy } from './local.strategy'; // Adicionei a Local aqui
 import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt'; // Necessário para validar tokens no Guard
+import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    PassportModule,
-    JwtModule.registerAsync({ // Mantemos para validação local
-      imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get('JWT_SECRET'),
-        signOptions: { expiresIn: '60m' },
-      }),
-      inject: [ConfigService],
-    }),
-    // Cliente TCP para o Auth Service
+    // Cliente TCP para falar com o Auth Service (Porta 3001)
     ClientsModule.register([
       {
         name: 'AUTH_SERVICE',
         transport: Transport.TCP,
-        options: { host: 'auth-service', port: 3001 },
+        options: {
+          host: process.env.AUTH_HOST || 'auth-service',
+          port: 3001,
+        },
       },
     ]),
+    PassportModule,
+    // Mantemos JwtModule para o JwtStrategy ler a Secret, mas não para assinar (quem assina é o microserviço)
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+      }),
+      inject: [ConfigService],
+    }),
   ],
   controllers: [AuthController],
-  providers: [JwtStrategy],
-  exports: [JwtStrategy, PassportModule],
+  providers: [JwtStrategy, LocalStrategy], // Sem AuthService!
+  exports: [ClientsModule], 
 })
 export class AuthModule {}

@@ -1,52 +1,94 @@
 version: '3.8'
 
 services:
-  # Sua aplicação principal (Raiz)
-  monolith:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  postgres:
+    image: postgres:15-alpine
     ports:
-      - "3000:3000"
+      - "5432:5432"
     environment:
-      - JWT_SECRET=SEU_SEGREDO_SUPER_SECRETO
-      - DB_PATH=/usr/src/app/data/database.sqlite
-      - AUTH_SERVICE_HOST=auth-service
-      - NOTIFICATIONS_SERVICE_HOST=notifications-service
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
     volumes:
-      - ./data:/usr/src/app/data
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+
+  gateway:
+    build: .
+    ports: ["3000:3000"]
+    environment:
+      - AUTH_HOST=auth-service
+      - USERS_HOST=users-service
+      - ROOMS_HOST=rooms-service
+      - RESOURCES_HOST=resources-service
+      - BOOKINGS_HOST=bookings-service
     depends_on:
       - auth-service
+      - users-service
+      - rooms-service
+      - resources-service
+      - bookings-service
     networks:
       - app-network
 
   auth-service:
-    build:
-      context: ./packages/auth-service
-      dockerfile: Dockerfile
-    expose:
-      - "3001"
+    build: ./packages/auth-service
     environment:
-      - JWT_SECRET=SEU_SEGREDO_SUPER_SECRETO
-      - DB_PATH=/usr/src/app/data/database.sqlite
-    volumes:
-      - ./data:/usr/src/app/data
+      - DB_HOST=postgres
+      - DB_NAME=auth_db
+      - USERS_HOST=users-service
+    depends_on:
+      - postgres
     networks:
       - app-network
 
-  notifications-service:
-    build:
-      context: ./packages/notification-service 
-      dockerfile: Dockerfile
-    expose:
-      - "3002"
+  users-service:
+    build: ./packages/users-service
+    environment:
+      - DB_HOST=postgres
+      - DB_NAME=users_db
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  rooms-service:
+    build: ./packages/rooms-service
+    environment:
+      - DB_HOST=postgres
+      - DB_NAME=rooms_db
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  resources-service:
+    build: ./packages/resources-service
+    environment:
+      - DB_HOST=postgres
+      - DB_NAME=resources_db
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  bookings-service:
+    build: ./packages/bookings-service
+    environment:
+      - DB_HOST=postgres
+      - DB_NAME=bookings_db
+      - ROOMS_HOST=rooms-service
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  notification-service:
+    build: ./packages/notification-service
     environment:
       - MAIL_HOST=smtp.exemplo.com
-      - MAIL_PORT=587
-      - MAIL_SECURE=false
-      - MAIL_USER=admin@exemplo.com
-      - MAIL_PASS=adminpassword123
-      - MAIL_FROM="Sistema de Reserva <no-reply@exemplo.com>"
+      # ... configurações de email
     networks:
       - app-network
 

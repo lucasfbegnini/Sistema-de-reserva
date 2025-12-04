@@ -1,5 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Inject} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -10,13 +9,14 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Role } from './enums/role.enum'; // Importar Role
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Request } from 'express';
+import { ClientProxy } from '@nestjs/microservices';
 
-// Interface para estender o Request do Express e incluir nosso usuário
+
 interface RequestWithUser extends Request {
   user: {
     userId: number;
     email: string;
-    role: Role; // CORRIGIDO: Tipo Role importado de enums
+    role: Role;
   };
 }
 
@@ -25,14 +25,17 @@ interface RequestWithUser extends Request {
 @UseGuards(JwtAuthGuard) // Aplica JWT protection by default
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+      @Inject('USERS_SERVICE') private readonly client: ClientProxy
+    ) {}
   
   @Public()
   @Post()
   @ApiOperation({ summary: 'Cria um novo usuário' })
-  @ApiResponse({ status: 201, description: 'O usuário foi criado com sucesso.', type: User })
   create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto); 
+    return this.client.send({ cmd: 'create_user' }, { 
+      createUserDto, 
+    }); 
   }
 
   @Public()
@@ -40,7 +43,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Lista todos os usuários' })
   @ApiResponse({ status: 200, description: 'A lista de usuários foi retornada com sucesso.', type: [User] })
   findAll() {
-    return this.usersService.findAll();
+    return this.client.send({ cmd: 'find_all_users' }, {});
   }
 
   @Public()
@@ -48,7 +51,9 @@ export class UsersController {
   @ApiOperation({ summary: 'Busca um usuário pelo ID' })
   @ApiResponse({ status: 200, description: 'O usuário foi retornado com sucesso.', type: User })
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+    return this.client.send({ cmd: 'find_one_user' }, { 
+      id: id 
+    });
   }
 
   @Patch(':id')
@@ -57,7 +62,11 @@ export class UsersController {
   @ApiOperation({ summary: 'Atualiza um usuário (Apenas Admins)' })
   @ApiResponse({ status: 200, description: 'O usuário foi atualizado com sucesso.', type: User })
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Req() req: RequestWithUser) {
-    return this.usersService.update(+id, updateUserDto, req.user.userId); // Passa o ID do admin para auditoria
+    return this.client.send({ cmd: 'update_user' }, { 
+      id: id, 
+      updateUserDto, 
+      adminId: req.user.userId 
+    });
   }
 
   @Delete(':id')
@@ -66,6 +75,9 @@ export class UsersController {
   @ApiOperation({ summary: 'Remove um usuário (Apenas Admins)' })
   @ApiResponse({ status: 200, description: 'O usuário foi removido com sucesso.' })
   remove(@Param('id') id: string, @Req() req: RequestWithUser) {
-    return this.usersService.remove(+id, req.user.userId); // Passa o ID do admin para auditoria
+    return this.client.send({ cmd: 'remove_user' }, { 
+      id: id, 
+      adminId: req.user.userId 
+    }); // Passa o ID do admin para auditoria
   }
 }

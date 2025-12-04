@@ -1,13 +1,21 @@
 import { Module } from '@nestjs/common';
-import { ResourcesService } from './resources.service';
 import { ResourcesController } from './resources.controller';
-import { TypeOrmModule } from '@nestjs/typeorm'; // Importe
-import { Resource } from './entities/resource.entity'; // Importe
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Resource])], // Registre a entidade
+  imports: [
+    ClientsModule.register([
+      {
+        name: 'RESOURCES_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: process.env.RESOURCES_HOST || 'resources-service',
+          port: 3005,
+        },
+      },
+    ]),
+  ],
   controllers: [ResourcesController],
-  providers: [ResourcesService],
-  exports: [ResourcesService], // Exportar o serviço pode ser útil depois
+  providers: [],
 })
 export class ResourcesModule {}
