@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ResourcesService } from './resources.service';
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { UpdateResourceDto } from './dto/update-resource.dto';
+import { Resource } from './entities/resource.entity';
 
 @Controller()
 export class ResourcesController {
@@ -20,6 +21,11 @@ export class ResourcesController {
   @MessagePattern({ cmd: 'find_one_resource' })
   findOne(@Payload() id: number) {
     return this.resourcesService.findOne(id);
+  }
+
+  @MessagePattern('find_resources_by_ids')
+  async findByIds(@Payload() ids: number[]): Promise<Resource[]> {
+    return this.resourcesService.findByIds(ids);
   }
 
   @MessagePattern({ cmd: 'update_resource' })

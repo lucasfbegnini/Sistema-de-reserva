@@ -21,10 +21,10 @@ export class RoomsController {
 
   // --- CRUD de Salas ---
   @MessagePattern({ cmd: 'create_room' })
-  create(@Payload() data: { dto: CreateRoomDto;  req: RequestWithUser }) {
+  create(@Payload() data: { dto: CreateRoomDto;  idCreator: number }) {
     return this.roomsService.create(
       data.dto, 
-      data.req.user.userId
+      data.idCreator
     );
   }
 

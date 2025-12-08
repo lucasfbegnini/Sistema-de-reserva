@@ -40,7 +40,6 @@ export class BookingsController {
   @ApiOperation({ summary: 'Cria uma nova reserva' })
   @ApiResponse({ status: 201, description: 'Reserva criada.', type: Booking })
   create(@Body() createBookingDto: CreateBookingDto, @Req() req: any) {
-    // Envia DTO + Dados do Usuário Logado
     return this.client.send({ cmd: 'create_booking' }, { 
       dto: createBookingDto, 
       user: { 

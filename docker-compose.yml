@@ -6,11 +6,17 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql  
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"] # Verifica se o PG está pronto para aceitar conexões
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - app-network
 
@@ -24,69 +30,81 @@ services:
       - ROOMS_HOST=rooms-service
       - RESOURCES_HOST=resources-service
       - BOOKINGS_HOST=bookings-service
-      - JWT_SECRET=sua_chave_super_secreta_aqui
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - auth-service
-      - users-service
-      - rooms-service
-      - resources-service
-      - bookings-service
+      auth-service:
+        condition: service_started
+      users-service:
+        condition: service_started
+      rooms-service:
+        condition: service_started
+      resources-service:
+        condition: service_started
+      bookings-service:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
   auth-service:
     build: ./packages/auth-service
     environment:
-      - DB_HOST=postgres
-      - DB_NAME=auth_db
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_AUTH}
       - USERS_HOST=users-service
-      - JWT_SECRET=sua_chave_super_secreta_aqui
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
   users-service:
     build: ./packages/users-service
     environment:
-      - DB_HOST=postgres
-      - DB_NAME=users_db
-      - ADMIN_NAME=Administrador
-      - ADMIN_EMAIL=admin@admin.com
-      - ADMIN_PASSWORD=admin123
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_USERS}
+      - ADMIN_NAME=${ADMIN_NAME}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
   rooms-service:
     build: ./packages/rooms-service
     environment:
-      - DB_HOST=postgres
-      - DB_NAME=rooms_db
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_ROOMS}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
   resources-service:
     build: ./packages/resources-service
     environment:
-      - DB_HOST=postgres
-      - DB_NAME=resources_db
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_RESOURCES}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
   bookings-service:
     build: ./packages/bookings-service
     environment:
-      - DB_HOST=postgres
-      - DB_NAME=bookings_db
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_BOOKINGS}
       - ROOMS_HOST=rooms-service
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -95,6 +113,9 @@ services:
     environment:
       - MAIL_HOST=smtp.exemplo.com
       # ... configurações de email
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 

@@ -41,9 +41,9 @@ export class Room {
   @ApiProperty({ enum: RoomStatus, default: RoomStatus.AVAILABLE })
   status: RoomStatus;
 
-  @Column('int', { array: true, default: []})
+  @Column('int', { array: true, default: [] }) // Usa um array de números no Postgres
   @ApiProperty({ type: [Number], description: 'IDs dos recursos associados à sala' })
-  resourceIds: number[];
+  resourceIds: number[]; // <-- Mantenha como array de IDs
 
   // Auditoria: ID do usuário que criou a sala
   @Column({ nullable: true })

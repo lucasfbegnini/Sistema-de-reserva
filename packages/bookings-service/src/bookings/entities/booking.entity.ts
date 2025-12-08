@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   Entity,
   Column,
@@ -35,6 +36,12 @@ export class Booking {
 
   @Column()
   roomId: number;
+
+  @ApiProperty({ description: 'ID do usuário que criou a reserva' })
+  createdById: number;
+
+  @ApiProperty({ description: 'ID do usuário que atualizou a reserva' })
+  updatedById: number;
 
   @CreateDateColumn()
   createdAt: Date;

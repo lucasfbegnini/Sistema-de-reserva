@@ -33,9 +33,9 @@ export class UsersController {
   @Post()
   @ApiOperation({ summary: 'Cria um novo usuário' })
   create(@Body() createUserDto: CreateUserDto) {
-    return this.client.send({ cmd: 'create_user' }, { 
-      createUserDto, 
-    }); 
+    return this.client.send({ cmd: 'create_user' },
+      createUserDto,
+    ); 
   }
 
   @Public()
@@ -51,9 +51,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Busca um usuário pelo ID' })
   @ApiResponse({ status: 200, description: 'O usuário foi retornado com sucesso.', type: User })
   findOne(@Param('id') id: string) {
-    return this.client.send({ cmd: 'find_one_user' }, { 
-      id: id 
-    });
+    return this.client.send({ cmd: 'find_one_user' }, id);
   }
 
   @Patch(':id')
@@ -63,8 +61,8 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'O usuário foi atualizado com sucesso.', type: User })
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Req() req: RequestWithUser) {
     return this.client.send({ cmd: 'update_user' }, { 
-      id: id, 
-      updateUserDto, 
+      id: parseInt(id),
+      dto: updateUserDto,
       adminId: req.user.userId 
     });
   }

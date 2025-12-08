@@ -1,21 +1,24 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder, In } from 'typeorm';
 import { Room, RoomStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class RoomsService {
   constructor(
     @InjectRepository(Room)
     private readonly roomsRepository: Repository<Room>,
+    @Inject('RESOURCES_SERVICE') private resourcesClient: ClientProxy,
   ) {}
 
   // --- CRUD Básico ---
   create(createRoomDto: CreateRoomDto, userId: number) {
     const room = this.roomsRepository.create({
       ...createRoomDto,
+      status: RoomStatus.AVAILABLE,
       createdById: userId,
       updatedById: userId,
       resourceIds: [],
@@ -49,13 +52,21 @@ export class RoomsService {
 
   async findOne(id: number): Promise<Room> {
     const room = await this.roomsRepository.findOne({
-       where: { id, status: In([RoomStatus.AVAILABLE, RoomStatus.MAINTENANCE]) },
-       relations: ['resources'],
+       where: { id:id, status: In([RoomStatus.AVAILABLE, RoomStatus.MAINTENANCE]) }
       });
     if (!room) {
       throw new NotFoundException(`Sala com ID ${id} não encontrada ou está desativada.`);
     }
-    return room;
+
+    const resources = await this.resourcesClient.send(
+      'find_resources_by_ids', 
+      room.resourceIds
+    ).toPromise();
+
+    return {
+    ...room,
+    resourceIds: resources,
+  };
   }
 
   async update(id: number, updateRoomDto: UpdateRoomDto, userId: number) {

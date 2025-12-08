@@ -24,7 +24,7 @@ import { Booking } from './entities/booking.entity';
         transport: Transport.TCP,
         options: { 
           host: process.env.NOTIFICATION_HOST || 'notification-service', 
-          port: 3001 // Porta padrão ou a que você definiu no microservice
+          port: 3002
         },
       },
     ]),

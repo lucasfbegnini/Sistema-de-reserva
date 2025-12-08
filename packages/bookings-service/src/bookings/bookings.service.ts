@@ -58,7 +58,7 @@ export class BookingsService {
     let room;
     try {
       // Chama o microserviço de salas
-      room = await lastValueFrom(this.roomsClient.send({ cmd: 'find_room_id' }, roomId));
+      room = await lastValueFrom(this.roomsClient.send({ cmd: 'find_one_room' }, roomId));
     } catch (e) {
       throw new RpcException(new NotFoundException(`Sala ${roomId} não encontrada ou serviço indisponível.`));
     }
@@ -95,7 +95,7 @@ export class BookingsService {
       id: savedBooking.id,
       startTime: savedBooking.startTime.toISOString(),
       endTime: savedBooking.endTime.toISOString(),
-      user: { email: user.email },
+      user: { id: user.userId, email: user.email },
       room: { name: room.name }, // Usamos o nome que veio do serviço de salas
     };
 
@@ -167,13 +167,13 @@ export class BookingsService {
     }
 
     booking.status = BookingStatus.CANCELLED;
-    // booking.updatedById = user.userId; // Se tiver auditoria
+    booking.updatedById = user.userId;
     await this.bookingsRepository.save(booking);
 
     // Preciso buscar o nome da sala remotamente para o e-mail
     let roomName = 'Sala';
     try {
-      const room = await lastValueFrom(this.roomsClient.send({ cmd: 'find_room_id' }, booking.roomId));
+      const room = await lastValueFrom(this.roomsClient.send({ cmd: 'find_one_room' }, booking.roomId));
       if (room) roomName = room.name;
     } catch (e) {
       this.logger.warn(`Não foi possível buscar nome da sala para notificação de cancelamento: ${e.message}`);
@@ -183,11 +183,17 @@ export class BookingsService {
       id: booking.id,
       startTime: booking.startTime.toISOString(),
       endTime: booking.endTime.toISOString(),
-      user: { email: user.email },
+      user: { id: user.userId, email: user.email },
       room: { name: roomName },
     };
 
     this.notificationsClient.emit('booking_cancelled', eventPayload);
+
+    return { 
+      success: true, 
+      message: `Reserva ${booking.id} cancelada com sucesso.`, 
+      booking: booking 
+    };
   }
 
   private async findConflict(roomId: number, start: Date, end: Date) {

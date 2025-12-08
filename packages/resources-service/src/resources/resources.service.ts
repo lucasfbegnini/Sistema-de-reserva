@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Resource } from './entities/resource.entity';
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { UpdateResourceDto } from './dto/update-resource.dto';
@@ -11,7 +11,7 @@ export class ResourcesService {
     @InjectRepository(Resource)
     private resourcesRepository: Repository<Resource>,
   ) {}
-
+x
   create(createResourceDto: CreateResourceDto, userId: number): Promise<Resource> {
     const resource = this.resourcesRepository.create({
         ...createResourceDto,
@@ -31,6 +31,20 @@ export class ResourcesService {
       throw new NotFoundException(`Recurso com ID ${id} não encontrado ou está deletado.`);
     }
     return resource;
+  }
+
+  async findByIds(ids: number[]): Promise<Resource[]> {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+    
+    const resources = await this.resourcesRepository.find({
+      where: {
+        id: In(ids), // << O 'In(ids)' é o que faz a mágica de buscar por PKs
+      },
+    });
+
+    return resources;
   }
 
   async update(id: number, updateResourceDto: UpdateResourceDto, userId: number): Promise<Resource> {
