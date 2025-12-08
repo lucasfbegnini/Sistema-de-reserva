@@ -61,6 +61,29 @@ export class UsersService implements OnApplicationBootstrap {
 
   async create(createUserDto: CreateUserDto, adminId: number): Promise<User> {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const existenteUser = await this.findByEmail(createUserDto.email);
+    if (existenteUser) {
+      this.logger.log('Usuário ja existe.');
+      if(existenteUser.deletedAt){
+        await this.usersRepository.restore(existenteUser.id);
+            
+            // 2. Atualiza dados (senha e auditoria)
+            await this.usersRepository.update(existenteUser.id, {
+                password: hashedPassword, // Atualiza a senha (se o DTO tiver)
+                updatedById: adminId,
+            });
+
+            // 3. RECARRREGA o usuário para ter o objeto atualizado (deletedAt = null)
+            const restoredUser = await this.usersRepository.findOne({ 
+                where: { id: existenteUser.id } 
+            });
+
+            this.logger.log(`Usuário ${restoredUser.email} restaurado e atualizado por ID ${adminId}.`);
+            return restoredUser; // FINALIZA O FLUXO AQUI.
+      }else{
+        throw new RpcException('erro ao criar usuário: email já em uso');
+      }
+    }
 
     const user = this.usersRepository.create({
       ...createUserDto,
@@ -85,9 +108,16 @@ export class UsersService implements OnApplicationBootstrap {
 
   async update(id: number, updateUserDto: UpdateUserDto, adminId: number): Promise<User> {
     const user = await this.findOne(id);
+    const userEmail = await this.findByEmail(updateUserDto.email);
+    if(userEmail && userEmail.id !== id){
+      throw new RpcException('erro ao atualizar usuário: email já em uso');
+    }
     
-    // O TypeORM.merge é seguro para incluir updatedById se a entidade estiver tipada corretamente
-    this.usersRepository.merge(user, updateUserDto, { updatedById: adminId });
+    const updatedUser = {
+      ...updateUserDto,
+      updatedById: adminId,
+    };
+    this.usersRepository.merge(user, updatedUser);
     
     return this.usersRepository.save(user);
   }
@@ -106,7 +136,12 @@ export class UsersService implements OnApplicationBootstrap {
     }
   }
 
-  findByEmail(email: string): Promise<User> {
-    return this.usersRepository.findOneBy({ email });
-  }
+  // users.service.ts
+
+async findByEmail(email: string): Promise<User | null> {
+    return this.usersRepository.findOne({ 
+        where: { email },
+        withDeleted: true, 
+    });
+}
 }

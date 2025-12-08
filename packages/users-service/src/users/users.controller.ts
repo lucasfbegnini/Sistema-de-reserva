@@ -14,7 +14,7 @@ export class UsersController {
   @MessagePattern({ cmd: 'find_all_users' })
   findAll(@Payload() _payload: any) { return this.service.findAll(); }
 
-  @MessagePattern({ cmd: 'find_user_id' })
+  @MessagePattern({ cmd: 'find_one_user' })
   findOne(@Payload() id: number) { return this.service.findOne(id); }
 
   @MessagePattern({ cmd: 'update_user' })
