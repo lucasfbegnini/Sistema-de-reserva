@@ -108,8 +108,14 @@ export class UsersService implements OnApplicationBootstrap {
 
   async update(id: number, updateUserDto: UpdateUserDto, adminId: number): Promise<User> {
     const user = await this.findOne(id);
+    if(updateUserDto.name === '' || updateUserDto.name === undefined){
+      updateUserDto.name = user.name;
+    }
+    if(updateUserDto.email === '' || updateUserDto.email === undefined){
+      updateUserDto.email = user.email;
+    }
     const userEmail = await this.findByEmail(updateUserDto.email);
-    if(userEmail && userEmail.id !== id){
+    if(userEmail && userEmail.id !== user.id){
       throw new RpcException('erro ao atualizar usuário: email já em uso');
     }
     
@@ -122,18 +128,29 @@ export class UsersService implements OnApplicationBootstrap {
     return this.usersRepository.save(user);
   }
 
-  async remove(id: number, adminId: number): Promise<void> {
+  async remove(id: number, adminId: number): Promise<String> {
     const user = await this.findOne(id);
+    if (!user) {
+        throw new RpcException(
+            new NotFoundException(`usuario não encotrado ou já removido.`)
+        );
+    }
 
     // 1. Auditoria: Seta o ID do usuário que está deletando
-    user.updatedById = adminId;
-    await this.usersRepository.save(user);
+    await this.usersRepository.update(id, {
+        updatedById: adminId,
+    } as any);
 
     // 2. Soft Delete
     const result = await this.usersRepository.softDelete(id);
-     if (result.affected === 0) {
-      throw new NotFoundException(`User with ID ${id} not found.`);
+    if (result.affected === 0) {
+        throw new RpcException(
+            new NotFoundException(`User with ID ${id} not found.`)
+        );
     }
+    const msg = {id: id, message: `Usuário com ID ${id} removido com sucesso.`};
+    this.logger.log(msg.message);
+    return msg.message;
   }
 
   // users.service.ts
