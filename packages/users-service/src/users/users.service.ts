@@ -59,21 +59,16 @@ export class UsersService implements OnApplicationBootstrap {
     }
   }
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto, adminId: number): Promise<User> {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
     const user = this.usersRepository.create({
       ...createUserDto,
-      password: hashedPassword
+      password: hashedPassword,
+      createdById: adminId,
+      updatedById: adminId,
     });
-    
-    const savedUser = await this.usersRepository.save(user);
-
-    // Auditoria para auto-registro (o usuário é o próprio criador)
-    savedUser.createdById = savedUser.id;
-    savedUser.updatedById = savedUser.id;
-
-    return this.usersRepository.save(savedUser);
+    return this.usersRepository.save(user);
   }
 
   findAll(): Promise<User[]> {

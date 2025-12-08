@@ -9,7 +9,7 @@ export class UsersController {
   constructor(private readonly service: UsersService) {}
 
   @MessagePattern({ cmd: 'create_user' })
-  create(@Payload() dto: CreateUserDto) { return this.service.create(dto); }
+  create(@Payload() data: { dto: CreateUserDto; adminId: number }) { return this.service.create(data.dto, data.adminId); }
 
   @MessagePattern({ cmd: 'find_all_users' })
   findAll(@Payload() _payload: any) { return this.service.findAll(); }

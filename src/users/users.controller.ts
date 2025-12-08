@@ -29,12 +29,12 @@ export class UsersController {
       @Inject('USERS_SERVICE') private readonly client: ClientProxy
     ) {}
   
-  @Public()
   @Post()
   @ApiOperation({ summary: 'Cria um novo usuário' })
-  create(@Body() createUserDto: CreateUserDto) {
+  create(@Body() createUserDto: CreateUserDto, @Req() req: RequestWithUser) {
+    const adminId = req.user.userId;
     return this.client.send({ cmd: 'create_user' },
-      createUserDto,
+      { dto: createUserDto, adminId: adminId },
     ); 
   }
 
