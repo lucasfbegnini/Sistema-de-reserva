@@ -1,10 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, UseGuards, ParseIntPipe, Req, Query, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, UseGuards, ParseIntPipe, Req, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 // DTOs (Mantidos na raiz para validação de entrada)
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
-import { AddResourceDto } from './dto/add-resource.dto'; // Crie este DTO se não tiver
 // Segurança e Entidades (Mantidas para Swagger e Auth)
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -97,7 +96,7 @@ export class RoomsController {
 
   // --- Associação Sala-Recurso ---
 
-  @Post(':id/resources')
+  @Post(':id/resources/:resourceId')
   @Roles(Role.ADMIN) // Apenas Admins podem associar recursos
   @ApiOperation({ summary: 'Associa um recurso a uma sala (Admin)' })
   @ApiResponse({ status: 201, description: 'Recurso associado com sucesso.', type: Room })
@@ -105,10 +104,10 @@ export class RoomsController {
   @ApiResponse({ status: 400, description: 'Recurso já associado a esta sala.' })
   @ApiResponse({ status: 401, description: 'Não autorizado.' })
   @ApiResponse({ status: 403, description: 'Acesso negado.' })
-  addResource(@Param('id', ParseIntPipe) id: number, @Body() body: AddResourceDto, @Req() req: RequestWithUser) {
+  addResource(@Param('id', ParseIntPipe) id: number, @Param('resourceId', ParseIntPipe) resourceId: number, @Req() req: RequestWithUser) {
     return this.client.send({ cmd: 'add_resource_to_room' }, { 
       id,
-      resourceIds: body.resourceIds,
+      resourceId: resourceId,
       idCreator: req.user.userId
     });
   }

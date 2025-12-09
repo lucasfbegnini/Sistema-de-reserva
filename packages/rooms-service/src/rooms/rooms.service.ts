@@ -75,23 +75,77 @@ export class RoomsService {
   }
 
   // --- Associação com Recursos ---
-  async addResources(roomId: number, resourceIdsToAdd: number[], idCreator: number) {
-    this.logger.log(`Iniciando adição de recursos à sala ID ${roomId}`);
+  async findResourcesAllocated(resourceId: number): Promise<number[]> {
+    const resource = await this.resourcesClient.send(
+      'find_resources_by_ids', 
+      [resourceId]
+    ).toPromise();
+
+    return resource.roomIds || [];
+  }
+  async adicionarRecursoASala(roomId: number, resourceId: number, idCreator: number): Promise<any> {
+    await this.resourcesClient.send(
+      { cmd: 'allocate_resource_to_room' }, 
+      { 
+        resourceId: resourceId, 
+        roomId: roomId, 
+        idCreator: idCreator 
+      }
+    ).toPromise();
+
+    return { success: true };
+  }
+  async removerRecursoDaSala(roomId: number, resourceId: number, idCreator: number): Promise<any> {
+    return this.resourcesClient.send(
+        { cmd: 'deallocate_from_room' }, // Exemplo de comando
+        { resourceId, roomId, idCreator }
+    ).toPromise();
+  }
+
+  async addResources(roomId: number, resourceIdToAdd: number, idCreator: number) {
+    //ver se recuso ja esta alocado
+    const allocatedRoomIds = await this.findResourcesAllocated(resourceIdToAdd);
+    if(allocatedRoomIds.length>0){
+      if(allocatedRoomIds.includes(roomId)){
+        this.logger.warn(`Recurso ${resourceIdToAdd} já está na alocação.`);
+      }else{
+        throw new BadRequestException(
+                `Recurso com ID ${resourceIdToAdd} já está alocado à(s) sala(s) ID(s): [${allocatedRoomIds.join(', ')}].`
+            );
+      }
+    }
+    await this.adicionarRecursoASala(roomId, resourceIdToAdd, idCreator);
+
     const room = await this.findOneSimple(roomId); 
-    this.logger.log(`Adicionando recursos à sala ID ${room.id}: ${resourceIdsToAdd.join(', ')}`);
-    
     // Inicializa se for null
     const currentIds = room.resourceIds || [];
-    
-    // Adiciona todas as novas IDs, incluindo duplicatas
-    room.resourceIds = [...currentIds, ...resourceIdsToAdd]; 
-    
+
+    room.resourceIds = [...currentIds, resourceIdToAdd];
+
     room.updatedById = idCreator;
     await this.roomsRepository.save(room);
     return this.findOne(roomId);
   }
 
-  async removeResources(roomId: number, resourceIdsToRemove: number[], idCreator: number) {
+  async removeResources(roomId: number, resourceIdToRemove: number, idCreator: number) {
+    //ver se recuso ja esta alocado
+    const allocatedRoomIds = await this.findResourcesAllocated(resourceIdToRemove);
+    //n esta na sala atual
+    if (!allocatedRoomIds.includes(roomId)) {
+        //recurso n alocado em nenhuma sala
+        if (allocatedRoomIds.length === 0) {
+            throw new NotFoundException(
+                `Recurso com ID ${resourceIdToRemove} não está associado a nenhuma sala (incluindo Sala ${roomId}).`
+            );
+        } else {
+            // Se está alocado em outro lugar, mas o usuário tenta remover daqui.
+            throw new BadRequestException(
+                `Recurso ID ${resourceIdToRemove} está alocado à(s) outra(s) sala(s) ID(s): [${allocatedRoomIds.join(', ')}], mas não à Sala ${roomId}.`
+            );
+        }
+    }
+    await this.removerRecursoDaSala(roomId, resourceIdToRemove, idCreator);
+
     const room = await this.findOneSimple(roomId); 
     
     let currentIds = room.resourceIds || [];
@@ -99,17 +153,10 @@ export class RoomsService {
     // Criamos uma cópia para modificação
     let modifiedIds = [...currentIds]; 
 
-    resourceIdsToRemove.forEach(idToRemove => {
-        const indexToRemove = modifiedIds.indexOf(idToRemove);
-        
-        // Se a ID for encontrada, remove APENAS essa ocorrência
-        if (indexToRemove > -1) {
-            // Usa splice para remover 1 elemento no índice encontrado
-            modifiedIds.splice(indexToRemove, 1);
-        } else {
-            console.warn(`Recurso ID ${idToRemove} não encontrado na sala ${roomId} para remoção.`);
-        }
-    });
+    const index = modifiedIds.indexOf(resourceIdToRemove);
+    if (index !== -1) {
+      modifiedIds.splice(index, 1); // remove só o primeiro encontrado
+    }
 
     room.resourceIds = modifiedIds;
     room.updatedById = idCreator;

@@ -50,13 +50,13 @@ export class RoomsController {
 
   // --- Associação Sala-Recurso ---
   @MessagePattern({ cmd: 'add_resource_to_room' })
-  addResources(@Payload() data: { id: number, resourceIds: number[], idCreator: number }) {
-    this.logger.log("id recebido no controller: " + data.id);
-    return this.roomsService.addResources(data.id, data.resourceIds, data.idCreator);
+  addResources(@Payload() data: { id: number, resourceId: number, idCreator: number }) {
+    return this.roomsService.addResources(data.id, data.resourceId, data.idCreator);
   }
 
   @MessagePattern({ cmd: 'remove_resource_from_room' })
   removeResources(@Payload() data: { roomId: number, resourceId: number, idCreator: number }) {
-    return this.roomsService.removeResources(data.roomId, [data.resourceId], data.idCreator);
+    this.logger.log("roomId recebido no controller: " + data.roomId);
+    return this.roomsService.removeResources(data.roomId, data.resourceId, data.idCreator);
   }
 }

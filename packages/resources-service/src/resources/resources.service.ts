@@ -85,4 +85,35 @@ x
       throw new NotFoundException(`Recurso com ID ${id} não encontrado.`);
     }
   }
+
+  async alocarRecursoASala(resourceId: number, roomId: number, idCreator: number): Promise<any> {
+    const resource = await this.findOne(resourceId);
+    if (!resource) {
+        throw new NotFoundException(`Recurso com ID ${resourceId} não encontrado.`);
+    }
+    const currentRooms = resource.rooms || [];
+
+    // Adiciona a sala se não estiver presente
+    if (!currentRooms.includes(roomId)) {
+      resource.rooms = [...currentRooms, roomId];
+      resource.updatedById = idCreator;
+      await this.resourcesRepository.save(resource);
+    }
+    return { success: true };
+  }
+
+  async removerRecursoDaSala(resourceId: number, roomId: number, idCreator: number): Promise<any> {
+    const resource = await this.findOne(resourceId);
+    if (!resource) {
+        throw new NotFoundException(`Recurso com ID ${resourceId} não encontrado.`);
+    }
+    const currentRooms = resource.rooms || [];
+    // Remove a sala se estiver presente
+    if (currentRooms.includes(roomId)) {
+      resource.rooms = currentRooms.filter(id => id !== roomId);
+      resource.updatedById = idCreator;
+      await this.resourcesRepository.save(resource);
+    }
+    return { success: true };
+  }
 }

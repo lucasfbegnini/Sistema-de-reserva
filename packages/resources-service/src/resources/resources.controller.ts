@@ -38,4 +38,21 @@ export class ResourcesController {
   remove(@Payload() data: { id: number, userId: number }) {
     return this.resourcesService.remove(data.id, data.userId);
   }
+
+  @MessagePattern({ cmd: 'allocate_resource_to_room' })
+  alocarRecursoASala(@Payload() data: { resourceId: number, roomId: number, idCreator: number }) {
+    return this.resourcesService.alocarRecursoASala(
+      data.resourceId,
+      data.roomId,
+      data.idCreator
+    );
+  }
+  @MessagePattern({ cmd: 'deallocate_from_room' })
+  removerRecursoDaSala(@Payload() data: { resourceId: number, roomId: number, idCreator: number }) {
+    return this.resourcesService.removerRecursoDaSala(
+      data.resourceId,
+      data.roomId,
+      data.idCreator
+    );
+  }
 }
