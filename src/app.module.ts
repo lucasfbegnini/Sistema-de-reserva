@@ -1,48 +1,26 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config'; // Importar ConfigModule
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { HealthModule } from './health/health.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
+// Remova imports de AuthModule, UsersModule, TypeOrmModule locais que continham lógica de negócio
 import { UsersModule } from './users/users.module';
-import { User } from './users/entities/user.entity';
+import { BookingsModule } from './bookings/bookings.module';
 import { AuthModule } from './auth/auth.module';
-import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RoomsModule } from './rooms/rooms.module';
 import { ResourcesModule } from './resources/resources.module';
-import { Room } from './rooms/entities/room.entity';
-import { Resource } from './resources/entities/resource.entity';
-import { BookingsModule } from './bookings/bookings.module'; 
-import { Booking } from './bookings/entities/booking.entity';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ // Adicionar ConfigModule
-      isGlobal: true, // Tornar as variáveis de ambiente disponíveis globalmente
-    }),
-    EventEmitterModule.forRoot(),
-    HealthModule,
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: process.env.DB_PATH || 'database.sqlite',
-      entities: [User, Room, Resource, Booking],
-      synchronize: true,
-    }),
-    UsersModule,
+    ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
+    UsersModule,
     RoomsModule,
     ResourcesModule,
     BookingsModule,
+    // Registrar os clientes (Proxies) para cada serviço
+    
   ],
-  controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-  ],
+  controllers: [AppController], // Você pode criar controllers específicos no gateway (ex: UsersGatewayController)
+  providers: [AppService],
 })
 export class AppModule {}

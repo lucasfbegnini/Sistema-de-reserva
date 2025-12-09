@@ -1,20 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ClientProxy } from '@nestjs/microservices';
 import * as bcrypt from 'bcrypt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../users/entities/user.entity';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>, // Injeção direta
+    @Inject('USERS_SERVICE') private usersClient: ClientProxy,
     private jwtService: JwtService
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.usersRepository.findOne({ where: { email } });
+    // Busca usuário remotamente
+    const user = await lastValueFrom(
+      this.usersClient.send({ cmd: 'find_user_by_email' }, email)
+    );
     if (user && await bcrypt.compare(pass, user.password)) {
       const { password, ...result } = user;
       return result;

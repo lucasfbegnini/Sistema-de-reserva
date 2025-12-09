@@ -1,127 +1,102 @@
-// src/bookings/bookings.controller.ts
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Delete,
-  UseGuards,
-  ParseIntPipe,
-  Req,
-  HttpCode,
-  HttpStatus,
-  Query, // 1. Importar Query
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Param, 
+  Delete, 
+  Inject, 
+  UseGuards, 
+  Query, 
+  ParseIntPipe, 
+  Req 
 } from '@nestjs/common';
-import { BookingsService } from './bookings.service';
+import { ClientProxy } from '@nestjs/microservices';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+
+// DTOs locais (para validação HTTP)
 import { CreateBookingDto } from './dto/create-booking.dto';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiQuery, // 2. Importar ApiQuery
-} from '@nestjs/swagger';
+import { QueryAvailabilityDto } from './dto/query-availability.dto';
+
+// Segurança
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
-import { Request } from 'express';
-import { Booking } from './entities/booking.entity';
-import { Roles } from 'src/auth/roles.decorator'; // 3. Importar Roles
-import { Role } from 'src/users/enums/role.enum'; // 4. Importar Role
-import { QueryAvailabilityDto } from './dto/query-availability.dto'; // 5. Importar DTO
-
-// Interface para estender o Request do Express e incluir nosso usuário
-interface RequestWithUser extends Request {
-  user: {
-    userId: number;
-    email: string;
-    role: Role; // CORRIGIDO: Tipo Role importado de enums
-  };
-}
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../users/enums/role.enum'; // Ajuste o caminho conforme sua estrutura
+import { Booking } from './entities/booking.entity'; // Apenas para o Swagger (classe limpa)
 
 @ApiTags('bookings')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard) // Protege todas as rotas de booking
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('v1/bookings')
 export class BookingsController {
-  constructor(private readonly bookingsService: BookingsService) {}
+  constructor(
+    @Inject('BOOKINGS_SERVICE') private readonly client: ClientProxy
+  ) {}
 
   @Post()
-  @ApiOperation({ summary: 'Cria uma nova reserva (Usuários e Admins)' })
-  @ApiResponse({ status: 201, description: 'Reserva criada com sucesso.', type: Booking })
-  @ApiResponse({ status: 400, description: 'Datas inválidas ou regras de negócio violadas.' })
-  @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  @ApiResponse({ status: 404, description: 'Sala não encontrada.' })
-  @ApiResponse({ status: 409, description: 'Conflito de horário.' })
-  create(
-    @Body() createBookingDto: CreateBookingDto,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.bookingsService.create(createBookingDto, req.user);
+  @Roles(Role.USER, Role.ADMIN)
+  @ApiOperation({ summary: 'Cria uma nova reserva' })
+  @ApiResponse({ status: 201, description: 'Reserva criada.', type: Booking })
+  create(@Body() createBookingDto: CreateBookingDto, @Req() req: any) {
+    return this.client.send({ cmd: 'create_booking' }, { 
+      dto: createBookingDto, 
+      user: { 
+        userId: req.user.userId, 
+        email: req.user.email, 
+        role: req.user.role 
+      }
+    });
   }
 
-  // [NOVO] Endpoint de Admin para ver todas as reservas
-  @Get('/all')
-  @Roles(Role.ADMIN) // Protegido - Apenas Admins
-  @ApiOperation({ summary: 'Lista TODAS as reservas (Admin)' })
-  @ApiResponse({ status: 200, description: 'Lista de todas as reservas.', type: [Booking] })
-  @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  @ApiResponse({ status: 403, description: 'Acesso negado.' })
+  @Get('my-bookings')
+  @Roles(Role.USER, Role.ADMIN)
+  @ApiOperation({ summary: 'Lista as reservas do usuário logado' })
+  findAllForUser(@Req() req: any) {
+    return this.client.send({ cmd: 'find_user_bookings' }, req.user.userId);
+  }
+
+  @Get('admin/all')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Lista todas as reservas (Admin)' })
   findAllAdmin() {
-    return this.bookingsService.findAllAdmin('ASC');
+    return this.client.send({ cmd: 'find_all_bookings_admin' }, {});
   }
 
-  // [NOVO] Endpoint para ver a agenda de uma sala
-  @Get('/availability/room/:roomId')
-  @ApiOperation({ summary: 'Verifica a disponibilidade de uma sala específica' })
-  @ApiResponse({ status: 200, description: 'Lista de reservas ocupadas para o período.', type: [Booking] })
-  @ApiResponse({ status: 400, description: 'Query de data inválida.' })
-  @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  @ApiQuery({ name: 'startDate', type: Date, description: 'Início do período de consulta' })
-  @ApiQuery({ name: 'endDate', type: Date, description: 'Fim do período de consulta' })
-  @ApiResponse({ status: 404, description: 'Sala não encontrada.' })
+  @Get('availability/:roomId')
+  @Roles(Role.USER, Role.ADMIN)
+  @ApiOperation({ summary: 'Verifica disponibilidade de uma sala em um período' })
   findAvailability(
     @Param('roomId', ParseIntPipe) roomId: number,
-    @Query() queryDto: QueryAvailabilityDto, // Valida startDate e endDate
+    @Query() query: QueryAvailabilityDto
   ) {
-    return this.bookingsService.findAvailabilityForRoom(roomId, queryDto);
-  }
-
-  @Get('/my-bookings') // Rota alterada para ser mais específica
-  @ApiOperation({ summary: 'Lista as minhas reservas (Usuários e Admins)' })
-  @ApiResponse({ status: 200, description: 'Lista de reservas.', type: [Booking] })
-  @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  findMyBookings(@Req() req: RequestWithUser) {
-    return this.bookingsService.findAllForUser(req.user.userId);
+    return this.client.send({ cmd: 'find_room_availability' }, { 
+      roomId, 
+      query 
+    });
   }
 
   @Get(':id')
-  @ApiOperation({
-    summary: 'Busca uma reserva específica pelo ID (Dono ou Admin)',
-  })
-  @ApiResponse({ status: 200, description: 'Reserva retornada.', type: Booking })
-  @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  @ApiResponse({ status: 403, description: 'Acesso negado.' })
-  @ApiResponse({ status: 404, description: 'Reserva não encontrada.' })
-  findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.bookingsService.findOne(id, req.user);
+  @Roles(Role.USER, Role.ADMIN)
+  @ApiOperation({ summary: 'Busca detalhes de uma reserva' })
+  findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.client.send({ cmd: 'find_one_booking' }, { 
+      id, 
+      user: { userId: req.user.userId, role: req.user.role }
+    });
   }
 
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Cancela uma reserva (Dono ou Admin)' })
-  @ApiResponse({ status: 204, description: 'Reserva cancelada com sucesso.' })
-  @ApiResponse({ status: 400, description: 'Não é possível cancelar reserva passada.'})
-  @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  @ApiResponse({ status: 403, description: 'Acesso negado.' })
-  @ApiResponse({ status: 404, description: 'Reserva não encontrada.' })
-  cancel(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.bookingsService.cancel(id, req.user);
+  @Delete(':id') // Ou @Patch(':id/cancel') dependendo da sua preferência
+  @Roles(Role.USER, Role.ADMIN)
+  @ApiOperation({ summary: 'Cancela uma reserva' })
+  cancel(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.client.send({ cmd: 'cancel_booking' }, { 
+      id, 
+      user: { 
+        userId: req.user.userId, 
+        email: req.user.email, 
+        role: req.user.role 
+      }
+    });
   }
 }

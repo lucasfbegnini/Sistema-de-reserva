@@ -1,52 +1,121 @@
 version: '3.8'
 
 services:
-  # Sua aplicação principal (Raiz)
-  monolith:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  postgres:
+    image: postgres:15-alpine
     ports:
-      - "3000:3000"
+      - "5432:5432"
     environment:
-      - JWT_SECRET=SEU_SEGREDO_SUPER_SECRETO
-      - DB_PATH=/usr/src/app/data/database.sqlite
-      - AUTH_SERVICE_HOST=auth-service
-      - NOTIFICATIONS_SERVICE_HOST=notifications-service
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - ./data:/usr/src/app/data
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql  
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"] # Verifica se o PG está pronto para aceitar conexões
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - app-network
+
+  gateway:
+    build: .
+    ports: ["3000:3000"]
+    environment:
+      - AUTH_HOST=auth-service
+      - NOTIFICATION_HOST=notification-service
+      - USERS_HOST=users-service
+      - ROOMS_HOST=rooms-service
+      - RESOURCES_HOST=resources-service
+      - BOOKINGS_HOST=bookings-service
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - auth-service
+      auth-service:
+        condition: service_started
+      users-service:
+        condition: service_started
+      rooms-service:
+        condition: service_started
+      resources-service:
+        condition: service_started
+      bookings-service:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
   auth-service:
-    build:
-      context: ./packages/auth-service
-      dockerfile: Dockerfile
-    expose:
-      - "3001"
+    build: ./packages/auth-service
     environment:
-      - JWT_SECRET=SEU_SEGREDO_SUPER_SECRETO
-      - DB_PATH=/usr/src/app/data/database.sqlite
-    volumes:
-      - ./data:/usr/src/app/data
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_AUTH}
+      - USERS_HOST=users-service
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
-  notifications-service:
-    build:
-      context: ./packages/notification-service 
-      dockerfile: Dockerfile
-    expose:
-      - "3002"
+  users-service:
+    build: ./packages/users-service
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_USERS}
+      - ADMIN_NAME=${ADMIN_NAME}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  rooms-service:
+    build: ./packages/rooms-service
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_ROOMS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  resources-service:
+    build: ./packages/resources-service
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_RESOURCES}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  bookings-service:
+    build: ./packages/bookings-service
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_BOOKINGS}
+      - ROOMS_HOST=rooms-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  notification-service:
+    build: ./packages/notification-service
     environment:
       - MAIL_HOST=smtp.exemplo.com
-      - MAIL_PORT=587
-      - MAIL_SECURE=false
-      - MAIL_USER=admin@exemplo.com
-      - MAIL_PASS=adminpassword123
-      - MAIL_FROM="Sistema de Reserva <no-reply@exemplo.com>"
+      # ... configurações de email
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 

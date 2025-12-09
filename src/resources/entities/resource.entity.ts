@@ -1,14 +1,6 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToMany,
-  DeleteDateColumn,
-} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { Room } from '../../rooms/entities/room.entity'; // Importe a entidade Room
+import { Room } from '../../rooms/entities/room.entity';
+import { PrimaryGeneratedColumn } from 'typeorm';
 
 export enum ResourceType {
   PROJECTOR = 'PROJECTOR',
@@ -18,43 +10,30 @@ export enum ResourceType {
   OTHER = 'OTHER',
 }
 
-@Entity()
 export class Resource {
   @PrimaryGeneratedColumn()
   @ApiProperty()
   id: number;
 
-  @Column()
   @ApiProperty({ example: 'Projetor Dell 4K', description: 'Nome do recurso' })
   name: string;
 
-  @Column({
-    type: 'simple-enum',
-    enum: ResourceType,
-  })
   @ApiProperty({ enum: ResourceType, example: ResourceType.PROJECTOR })
   type: ResourceType;
 
-  // Relação Many-to-Many com Room (inverso)
-  @ManyToMany(() => Room, (room) => room.resources)
-  rooms: Room[]; // Um recurso pode estar em várias salas
+  rooms: Room[]; 
 
-  @Column({ nullable: true })
   @ApiProperty({ description: 'ID do usuário que criou o recurso' })
   createdById: number;
 
-  @Column({ nullable: true })
   @ApiProperty({ description: 'ID do usuário que atualizou o recurso' })
   updatedById: number;
 
-  @CreateDateColumn()
   @ApiProperty()
   createdAt: Date;
 
-  @UpdateDateColumn()
   @ApiProperty()
   updatedAt: Date;
 
-  @DeleteDateColumn() // Soft delete
   deletedAt: Date;
 }
