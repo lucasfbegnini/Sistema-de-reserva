@@ -76,12 +76,13 @@ export class RoomsService {
 
   // --- Associação com Recursos ---
   async findResourcesAllocated(resourceId: number): Promise<number[]> {
-    const resource = await this.resourcesClient.send(
-      'find_resources_by_ids', 
-      [resourceId]
+    const resources: any[] = await this.resourcesClient.send(
+      'find_resources_by_ids',
+      [resourceId],
     ).toPromise();
 
-    return resource.roomIds || [];
+    const resource = resources[0];
+    return (resource && resource.rooms) ? resource.rooms : [];
   }
   async adicionarRecursoASala(roomId: number, resourceId: number, idCreator: number): Promise<any> {
     await this.resourcesClient.send(
