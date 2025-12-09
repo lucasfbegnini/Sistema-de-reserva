@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Delete, UseGuards, HttpCode, HttpStatus, Req, Inject} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Delete, UseGuards, HttpCode, HttpStatus, Req, Inject, ParseIntPipe, Param} from '@nestjs/common';
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { UpdateResourceDto } from './dto/update-resource.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -49,22 +49,26 @@ export class ResourcesController {
   @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Busca um recurso pelo ID' })
-  findOne(id: number) {
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.client.send({ cmd: 'find_one_resource' }, { id });
   }
 
   @Patch(':id')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Atualiza um recurso existente (Admin)' })
-  update(id: number, updateResourceDto: UpdateResourceDto, @Req() req: RequestWithUser) {
-    return this.client.send({ cmd: 'update_resource' }, { id, updateResourceDto, userId: req.user.userId });
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateResourceDto: UpdateResourceDto, @Req() req: RequestWithUser) {
+    return this.client.send({ cmd: 'update_resource' }, { 
+      id, 
+      updateResourceDto, 
+      userId: 
+      req.user.userId });
   }
 
   @Delete(':id')
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remove um recurso (Admin)' })
-  remove(id: number, @Req() req: RequestWithUser) {
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: RequestWithUser) {
     return this.client.send({ cmd: 'remove_resource' }, { id, userId: req.user.userId });
   }
 }

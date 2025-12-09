@@ -7,7 +7,6 @@ import {
   Delete, 
   Inject, 
   UseGuards, 
-  Query, 
   ParseIntPipe, 
   Req 
 } from '@nestjs/common';
@@ -16,7 +15,6 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 
 // DTOs locais (para validação HTTP)
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { QueryAvailabilityDto } from './dto/query-availability.dto';
 
 // Segurança
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -63,39 +61,21 @@ export class BookingsController {
     return this.client.send({ cmd: 'find_all_bookings_admin' }, {});
   }
 
-  @Get('availability/:roomId')
-  @Roles(Role.USER, Role.ADMIN)
-  @ApiOperation({ summary: 'Verifica disponibilidade de uma sala em um período' })
-  findAvailability(
-    @Param('roomId', ParseIntPipe) roomId: number,
-    @Query() query: QueryAvailabilityDto
-  ) {
-    return this.client.send({ cmd: 'find_room_availability' }, { 
-      roomId, 
-      query 
-    });
-  }
-
   @Get(':id')
-  @Roles(Role.USER, Role.ADMIN)
-  @ApiOperation({ summary: 'Busca detalhes de uma reserva' })
-  findOne(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
-    return this.client.send({ cmd: 'find_one_booking' }, { 
-      id, 
-      user: { userId: req.user.userId, role: req.user.role }
-    });
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Busca detalhes de uma reserva por id, (Admin)' })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.client.send({ cmd: 'find_one_booking' }, { id });
   }
 
   @Delete(':id') // Ou @Patch(':id/cancel') dependendo da sua preferência
-  @Roles(Role.USER, Role.ADMIN)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Cancela uma reserva' })
   cancel(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.client.send({ cmd: 'cancel_booking' }, { 
       id, 
       user: { 
-        userId: req.user.userId, 
-        email: req.user.email, 
-        role: req.user.role 
+        userId: req.user.userId
       }
     });
   }

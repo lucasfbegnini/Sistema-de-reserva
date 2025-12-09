@@ -20,8 +20,8 @@ export class ResourcesController {
   }
 
   @MessagePattern({ cmd: 'find_one_resource' })
-  findOne(@Payload() id: number) {
-    return this.resourcesService.findOne(id);
+  findOne(@Payload() data: { id: number }) {
+    return this.resourcesService.findOne(data.id);
   }
 
   @MessagePattern('find_resources_by_ids')
@@ -30,13 +30,13 @@ export class ResourcesController {
   }
 
   @MessagePattern({ cmd: 'update_resource' })
-  update(@Payload() data: { id: number, updateResourceDto: UpdateResourceDto, userId: number }) {
-    return this.resourcesService.update(data.id, data.updateResourceDto, data.userId);
+  update(@Payload() data: { id: number, updateResourceDto: UpdateResourceDto, idCreator: number }) {
+    return this.resourcesService.update(data.id, data.updateResourceDto, data.idCreator);
   }
 
   @MessagePattern({ cmd: 'remove_resource' })
-  remove(@Payload() data: { id: number, userId: number }) {
-    return this.resourcesService.remove(data.id, data.userId);
+  remove(@Payload() data: { id: number, idCreator: number }) {
+    return this.resourcesService.remove(data.id, data.idCreator);
   }
 
   @MessagePattern({ cmd: 'allocate_resource_to_room' })

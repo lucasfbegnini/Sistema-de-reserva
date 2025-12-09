@@ -62,20 +62,20 @@ x
     return resourcesWithDuplicates;
   }
 
-  async update(id: number, updateResourceDto: UpdateResourceDto, userId: number): Promise<Resource> {
+  async update(id: number, updateResourceDto: UpdateResourceDto, idCreator: number): Promise<Resource> {
     const resource = await this.findOne(id);
     
     // Usa TypeORM.merge para garantir que updatedById seja reconhecido.
-    this.resourcesRepository.merge(resource, updateResourceDto, { updatedById: userId });
+    this.resourcesRepository.merge(resource, updateResourceDto, { updatedById: idCreator });
     
     return this.resourcesRepository.save(resource);
   }
 
-  async remove(id: number, userId: number): Promise<void> {
+  async remove(id: number, idCreator: number): Promise<any> {
     const resource = await this.findOne(id);
 
     // 1. Auditoria: Marca quem está "deletando" (soft delete)
-    resource.updatedById = userId;
+    resource.updatedById = idCreator;
     await this.resourcesRepository.save(resource);
 
     // 2. Soft Delete
@@ -84,6 +84,7 @@ x
     if (result.affected === 0) {
       throw new NotFoundException(`Recurso com ID ${id} não encontrado.`);
     }
+    return { success: true };
   }
 
   async alocarRecursoASala(resourceId: number, roomId: number, idCreator: number): Promise<any> {
