@@ -12,11 +12,11 @@ export class ResourcesService {
     private resourcesRepository: Repository<Resource>,
   ) {}
 x
-  create(createResourceDto: CreateResourceDto, userId: number): Promise<Resource> {
+  create(createResourceDto: CreateResourceDto, idCreator: number): Promise<Resource> {
     const resource = this.resourcesRepository.create({
         ...createResourceDto,
-        createdById: userId,
-        updatedById: userId,
+        createdById: idCreator,
+        updatedById: idCreator,
     });
     return this.resourcesRepository.save(resource);
   }
@@ -38,13 +38,28 @@ x
       return [];
     }
     
-    const resources = await this.resourcesRepository.find({
+    // 1. Garante que buscamos apenas IDs únicas no banco de dados
+    const uniqueIds = Array.from(new Set(ids));
+
+    // 2. Busca apenas os recursos únicos do BD (como você já fazia)
+    const uniqueResources = await this.resourcesRepository.find({
       where: {
-        id: In(ids), // << O 'In(ids)' é o que faz a mágica de buscar por PKs
+        id: In(uniqueIds), 
       },
     });
 
-    return resources;
+    // 3. Cria um mapa {id -> Resource} para busca rápida O(1)
+    const resourceMap = new Map<number, Resource>();
+    uniqueResources.forEach(resource => {
+      resourceMap.set(resource.id, resource);
+    });
+
+    // 4. Mapeia a lista original de IDs para os objetos Resource correspondentes
+    const resourcesWithDuplicates = ids
+      .map(id => resourceMap.get(id))
+      .filter(resource => resource !== undefined) as Resource[]; // Filtra IDs que não foram encontradas (opcional)
+
+    return resourcesWithDuplicates;
   }
 
   async update(id: number, updateResourceDto: UpdateResourceDto, userId: number): Promise<Resource> {

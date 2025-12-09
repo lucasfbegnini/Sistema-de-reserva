@@ -35,7 +35,7 @@ export class ResourcesController {
     // Manda mensagem para o microserviço
     return this.client.send({ cmd: 'create_resource' }, { 
       createResourceDto, 
-      userId: req.user.userId 
+      idCreator: req.user.userId 
     });
   }
 

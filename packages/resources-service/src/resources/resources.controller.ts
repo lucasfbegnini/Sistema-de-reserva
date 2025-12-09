@@ -9,8 +9,9 @@ import { Resource } from './entities/resource.entity';
 export class ResourcesController {
   constructor(private readonly resourcesService: ResourcesService) {}
 
-  create(@Payload() data: { createResourceDto: CreateResourceDto, userId: number }) {
-    return this.resourcesService.create(data.createResourceDto, data.userId);
+  @MessagePattern({ cmd: 'create_resource' })
+  create(@Payload() data: { createResourceDto: CreateResourceDto, idCreator: number }) {
+    return this.resourcesService.create(data.createResourceDto, data.idCreator);
   }
 
   @MessagePattern({ cmd: 'find_all_resources' })
