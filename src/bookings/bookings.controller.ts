@@ -3,7 +3,6 @@ import {
   Get, 
   Post, 
   Body, 
-  Patch, 
   Param, 
   Delete, 
   Inject, 
@@ -13,7 +12,7 @@ import {
   Req 
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 // DTOs locais (para validação HTTP)
 import { CreateBookingDto } from './dto/create-booking.dto';

@@ -24,7 +24,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
       }
       return user;
     } catch (e) {
-      throw new UnauthorizedException('Falha na autenticação');
+      throw new UnauthorizedException(`Falha na autenticação ${e.message}`);
     }
   }
 }
