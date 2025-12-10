@@ -29,12 +29,12 @@ export class BookingsController {
   }
 
   @MessagePattern({ cmd: 'find_one_booking' })
-  findOne(@Payload() data: { id: number, user: { userId: number; role: string } }) {
-    return this.bookingsService.findOne(data.id, data.user);
+  findOne(@Payload() data: { id: number }) {
+    return this.bookingsService.findOne(data.id);
   }
 
   @MessagePattern({ cmd: 'cancel_booking' })
-  cancel(@Payload() data: { id: number, user: { userId: number; email: string; role: string } }) {
-    return this.bookingsService.cancel(data.id, data.user);
+  cancel(@Payload() data: { id: number, userId: number }) {
+    return this.bookingsService.cancel(data.id, data.userId);
   }
 }

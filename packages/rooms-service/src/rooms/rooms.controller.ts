@@ -1,22 +1,13 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
-import { Request } from 'express';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-
-// Interface para estender o Request do Express e incluir nosso usuário
-interface RequestWithUser extends Request {
-  user: {
-    userId: number;
-    email: string;
-  };
-}
 
 
 @Controller()
 export class RoomsController {
+  private readonly logger = new Logger(RoomsController.name);
   constructor(private readonly roomsService: RoomsService) {}
 
   // --- CRUD de Salas ---
@@ -29,11 +20,8 @@ export class RoomsController {
   }
 
   @MessagePattern({ cmd: 'find_all_rooms' })
-  findAll(@Payload() data: { minCapacity?: number; resources?: number[] }) {
-    return this.roomsService.findAll(
-      data?.minCapacity, 
-      data?.resources
-    );
+  findAll(@Payload() data: any) {
+    return this.roomsService.findAll();
   }
 
   @MessagePattern({ cmd: 'find_one_room' })
@@ -44,30 +32,31 @@ export class RoomsController {
   }
 
   @MessagePattern({ cmd: 'update_room' })
-  update(@Payload() data: { id: number; dto: UpdateRoomDto; req: RequestWithUser }) {
+  update(@Payload() data: { id: number; dto: UpdateRoomDto; idCreator: number }) {
     return this.roomsService.update(
       data.id,
       data.dto,
-      data.req.user.userId
+      data.idCreator
     );
   }
 
   @MessagePattern({ cmd: 'remove_room' })
-  remove(@Payload() data: { id: number; req: RequestWithUser }) {
+  remove(@Payload() data: { id: number; idCreator: number }) {
     return this.roomsService.remove(
       data.id, 
-      data.req.user.userId
+      data.idCreator
     );
   }
 
   // --- Associação Sala-Recurso ---
   @MessagePattern({ cmd: 'add_resource_to_room' })
-  addResources(@Payload() data: { roomId: number, resourceIds: number[], adminId: number }) {
-    return this.roomsService.addResources(data.roomId, data.resourceIds, data.adminId);
+  addResources(@Payload() data: { id: number, resourceId: number, idCreator: number }) {
+    return this.roomsService.addResources(data.id, data.resourceId, data.idCreator);
   }
 
   @MessagePattern({ cmd: 'remove_resource_from_room' })
-  removeResources(@Payload() data: { roomId: number, resourceIds: number[], adminId: number }) {
-    return this.roomsService.removeResources(data.roomId, data.resourceIds, data.adminId);
+  removeResources(@Payload() data: { roomId: number, resourceId: number, idCreator: number }) {
+    this.logger.log("roomId recebido no controller: " + data.roomId);
+    return this.roomsService.removeResources(data.roomId, data.resourceId, data.idCreator);
   }
 }

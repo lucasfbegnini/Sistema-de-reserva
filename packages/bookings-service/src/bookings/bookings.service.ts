@@ -145,29 +145,23 @@ export class BookingsService {
     });
   }
 
-  async findOne(id: number, user: { userId: number; role: string }) {
+  async findOne(id: number) {
     const booking = await this.bookingsRepository.findOneBy({ id });
     if (!booking) {
       throw new RpcException(new NotFoundException(`Reserva com ID ${id} não encontrada.`));
     }
-
-    // Validação de Permissão
-    if (user.role !== 'ADMIN' && booking.userId !== user.userId) {
-      throw new RpcException(new ForbiddenException('Você não tem permissão para ver esta reserva.'));
-    }
-
     return booking;
   }
 
-  async cancel(id: number, user: { userId: number; email: string; role: string }) {
-    const booking = await this.findOne(id, user); // Já valida existência e permissão
+  async cancel(id: number, userId: number) {
+    const booking = await this.findOne(id);
 
     if (new Date() > new Date(booking.startTime)) {
       throw new RpcException(new BadRequestException('Não é possível cancelar uma reserva que já ocorreu.'));
     }
 
     booking.status = BookingStatus.CANCELLED;
-    booking.updatedById = user.userId;
+    booking.updatedById = userId;
     await this.bookingsRepository.save(booking);
 
     // Preciso buscar o nome da sala remotamente para o e-mail
@@ -183,7 +177,7 @@ export class BookingsService {
       id: booking.id,
       startTime: booking.startTime.toISOString(),
       endTime: booking.endTime.toISOString(),
-      user: { id: user.userId, email: user.email },
+      user: { id: userId, email: '' },
       room: { name: roomName },
     };
 
