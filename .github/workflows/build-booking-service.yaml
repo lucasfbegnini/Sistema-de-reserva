@@ -34,7 +34,7 @@ jobs:
 
       - uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./packages/bookings-service
           file: ./packages/booking-service/Dockerfile
           # Constrói a imagem, mas só publica se o evento NÃO for um pull request
           push: ${{ github.event_name != 'pull_request' }}
