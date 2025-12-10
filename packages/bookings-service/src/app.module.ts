@@ -12,9 +12,18 @@ import { BookingsModule } from './bookings/bookings.module';
       port: 5432,
       username: process.env.POSTGRES_USER || 'admin', // Padronize com o docker-compose
       password: process.env.POSTGRES_PASSWORD || 'admin',
-      database: process.env.DB_NAME,
+      database: process.env.POSTGRES_DB,
+
+      schema: process.env.BOOKINGSSCHEMA,
+
       autoLoadEntities: true,
       synchronize: true, // Use false em produção
+
+      extra:{
+        options: `-c search_path=${process.env.BOOKINGSSCHEMA}, public`
+      }
+
+      //migrationsRun: true,
     }),
     BookingsModule,
   ],

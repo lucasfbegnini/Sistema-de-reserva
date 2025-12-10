@@ -1,0 +1,42 @@
+name: build-room-service
+
+on:
+  push:
+    branches: [ main, dev ]
+    # Dispara o workflow apenas se houver mudanças na pasta do serviço
+    paths:
+      - 'packages/room-service/**'
+      - '.github/workflows/build-room-service.yml'
+  pull_request:
+    paths:
+      - 'packages/room-service/**'
+      - '.github/workflows/build-room-service.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Permissão necessária para publicar a imagem no registro do GitHub
+      packages: write
+    steps:
+      # Os passos de checkout e login (que estavam como '...') precisam ser adicionados aqui
+      
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/room-service
+          # Gera tags automaticamente: 'main', 'latest' e o hash do commit
+          tags: |
+            type=ref,event=branch
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./packages/room-service/Dockerfile
+          # Constrói a imagem, mas só publica se o evento NÃO for um pull request
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

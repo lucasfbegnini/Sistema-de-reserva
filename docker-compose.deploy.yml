@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"] # Verifica se o PG está pronto para aceitar conexões
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - app-network
+
+  gateway:
+    image: ghcr.io/REPO_OWNER/gateway:${GATEWAY_IMAGE_TAG:-latest}
+    ports: ["3000:3000"]
+    environment:
+      - AUTH_HOST=auth-service
+      - NOTIFICATION_HOST=notification-service
+      - USERS_HOST=users-service
+      - ROOMS_HOST=rooms-service
+      - RESOURCES_HOST=resources-service
+      - BOOKINGS_HOST=bookings-service
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      auth-service:
+        condition: service_started
+      users-service:
+        condition: service_started
+      rooms-service:
+        condition: service_started
+      resources-service:
+        condition: service_started
+      bookings-service:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  auth-service:
+    image: ghcr.io/REPO_OWNER/auth-service:${AUTH_IMAGE_TAG:-latest}
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_AUTH}
+      - USERS_HOST=users-service
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network  
+
+  users-service:
+    image: ghcr.io/REPO_OWNER/user-service:${USER_IMAGE_TAG:-latest}
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_USERS}
+      - ADMIN_NAME=${ADMIN_NAME}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  rooms-service:
+    image: ghcr.io/REPO_OWNER/room-service:${ROOM_IMAGE_TAG:-latest}
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_ROOMS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  resources-service:
+    image: ghcr.io/REPO_OWNER/resources-service:${RESOURCES_IMAGE_TAG:-latest}
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_RESOURCES}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  bookings-service:
+    image: ghcr.io/REPO_OWNER/booking-service:${BOOKING_IMAGE_TAG:-latest}
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME_BOOKINGS}
+      - ROOMS_HOST=rooms-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  notification-service:
+    image: ghcr.io/REPO_OWNER/notification-service:${NOTIFICATION_IMAGE_TAG:-latest}
+    environment:
+      - MAIL_HOST=smtp.exemplo.com
+      # ... configurações de email
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

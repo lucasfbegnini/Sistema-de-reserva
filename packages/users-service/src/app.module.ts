@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import { User } from './users/entities/user.entity'; // Certifique-se que a entidade foi movida para este pacote
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -13,9 +12,18 @@ import { UsersModule } from './users/users.module';
       port: 5432,
       username: process.env.POSTGRES_USER || 'admin', // Padronize com o docker-compose
       password: process.env.POSTGRES_PASSWORD || 'admin',
-      database: process.env.DB_NAME, // Lerá 'users_db' do docker-compose
+      database: process.env.POSTGRES_DB, // Lerá 'users_db' do docker-compose
+      
+      schema: process.env.USERSSCHEMA,
+
       autoLoadEntities: true,
       synchronize: true, // Use false em produção
+
+      extra:{
+        options: `-c search_path=${process.env.USERSSCHEMA}, public`
+      }
+
+      //migrationsRun: true,
     }),
     UsersModule,
   ],
