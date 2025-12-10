@@ -1,0 +1,50 @@
+name: build-booking-service
+
+on:
+  push:
+    branches: [ main, dev ]
+    # Dispara o workflow apenas se houver mudanças na pasta do serviço
+    paths:
+      - 'packages/booking-service/**'
+      - '.github/workflows/build-booking-service.yml'
+  pull_request:
+    paths:
+      - 'packages/booking-service/**'
+      - '.github/workflows/build-booking-service.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Permissão necessária para publicar a imagem no registro do GitHub
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/booking-service
+          # Gera tags automaticamente: 'main', 'latest' e o hash do commit
+          tags: |
+            type=ref,event=branch
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./packages/bookings-service
+          file: ./packages/booking-service/Dockerfile
+          # Constrói a imagem, mas só publica se o evento NÃO for um pull request
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
