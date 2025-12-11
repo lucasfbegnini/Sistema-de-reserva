@@ -44,8 +44,8 @@ jobs:
 
       - uses: docker/build-push-action@v6
         with:
-          context: ./src
-          file: ./src/Dockerfile
+          context: ./
+          file: ./Dockerfile
           # Constrói a imagem, mas só publica se o evento NÃO for um pull request
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
