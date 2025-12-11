@@ -7,10 +7,12 @@ on:
     paths:
       - 'src/**'
       - '.github/workflows/build-gatway.yml'
+      - 'Dockerfile'
   pull_request:
     paths:
       - 'src/**'
       - '.github/workflows/build-gatway.yml'
+      - 'Dockerfile'
 
 jobs:
   build:
