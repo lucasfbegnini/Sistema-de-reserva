@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
-
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+//coment
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -20,12 +22,14 @@ import { UsersModule } from './users/users.module';
       synchronize: true, // Use false em produção
 
       extra:{
-        options: `-c search_path=${process.env.USERSSCHEMA}, public`
+        options: `-c search_path=${process.env.USERSSCHEMA},public`
       }
 
       //migrationsRun: true,
     }),
     UsersModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

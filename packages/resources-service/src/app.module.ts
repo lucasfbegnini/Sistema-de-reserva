@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ResourcesModule } from './resources/resources.module';
-
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+//coment
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -20,12 +22,14 @@ import { ResourcesModule } from './resources/resources.module';
       synchronize: true, // Use false em produção
 
       extra:{
-        options: `-c search_path=${process.env.RESOURCESSCHEMA}, public`
+        options: `-c search_path=${process.env.RESOURCESSCHEMA},public`
       }
 
       //migrationsRun: true,
     }),
     ResourcesModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
