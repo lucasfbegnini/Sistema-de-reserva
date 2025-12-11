@@ -6,7 +6,7 @@ if (-not (Test-Path ".env.prod")) {
     if (Test-Path ".env.prod.example") {
         Copy-Item -Path ".env.prod.example" -Destination ".env.prod"
         Write-Host "Arquivo .env.prod criado a partir do template."
-        Write-Warning "!!! ATENÇÃO: Edite o .env.prod com seus segredos (passwords, JWT) antes de prosseguir. !!!"
+        Write-Warning "!!! ATENCAO: Edite o .env.prod com seus segredos (passwords, JWT) antes de prosseguir. !!!"
     } else {
         Write-Error "ERRO: O arquivo .env.prod ou .env.prod.example não foi encontrado."
         exit 1
@@ -81,12 +81,11 @@ function Check-Health {
     }
 }
 
-Check-Health -Url "http://localhost:3000/health" -ServiceName "Gateway Service"
-Check-Health -Url "http://localhost:3001/" -ServiceName "Auth Service"
-Check-Health -Url "http://localhost:3002/" -ServiceName "Notification Service"
-Check-Health -Url "http://localhost:3003/" -ServiceName "User Service"
-Check-Health -Url "http://localhost:3004/" -ServiceName "Room Service"
-Check-Health -Url "http://localhost:3005/" -ServiceName "Resources Service"
-Check-Health -Url "http://localhost:3006/" -ServiceName "Booking Service"
-
+Check-Health -Url "http://localhost:3000/health" -ServiceName "gateway"
+Check-Health -Url "http://localhost:3001/health" -ServiceName "auth-service"
+Check-Health -Url "http://localhost:3002/health" -ServiceName "notification-service"
+Check-Health -Url "http://localhost:3003/health" -ServiceName "users-service"
+Check-Health -Url "http://localhost:3004/health" -ServiceName "rooms-service"
+Check-Health -Url "http://localhost:3005/health" -ServiceName "resources-service"
+Check-Health -Url "http://localhost:3006/health" -ServiceName "bookings-service"
 Write-Host "Deploy e verificacao feito!" -ForegroundColor Green
