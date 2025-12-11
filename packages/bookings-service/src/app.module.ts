@@ -20,7 +20,7 @@ import { BookingsModule } from './bookings/bookings.module';
       synchronize: true, // Use false em produção
 
       extra:{
-        options: `-c search_path=${process.env.BOOKINGSSCHEMA}, public`
+        options: `-c search_path=${process.env.BOOKINGSSCHEMA},public`
       }
 
       //migrationsRun: true,

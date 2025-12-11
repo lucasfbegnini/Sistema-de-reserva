@@ -20,7 +20,7 @@ import { RoomsModule } from './rooms/rooms.module';
       synchronize: true, // Use false em produção
 
       extra:{
-        options: `-c search_path=${process.env.ROOMSCHEMA}, public`
+        options: `-c search_path=${process.env.ROOMSCHEMA},public`
       }
 
       //migrationsRun: true,

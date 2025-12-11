@@ -1,16 +1,16 @@
-name: build-booking-service
+name: build-bookings-service
 
 on:
   push:
     branches: [ main, dev ]
     # Dispara o workflow apenas se houver mudanças na pasta do serviço
     paths:
-      - 'packages/booking-service/**'
-      - '.github/workflows/build-booking-service.yml'
+      - 'packages/bookings-service/**'
+      - '.github/workflows/build-bookings-service.yml'
   pull_request:
     paths:
-      - 'packages/booking-service/**'
-      - '.github/workflows/build-booking-service.yml'
+      - 'packages/bookings-service/**'
+      - '.github/workflows/build-bookings-service.yml'
 
 jobs:
   build:
@@ -33,7 +33,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ghcr.io/${{ github.repository_owner }}/booking-service
+          images: ghcr.io/${{ github.repository_owner }}/bookings-service
           # Gera tags automaticamente: 'main', 'latest' e o hash do commit
           tags: |
             type=ref,event=branch
@@ -43,7 +43,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: ./packages/bookings-service
-          file: ./packages/booking-service/Dockerfile
+          file: ./packages/bookings-service/Dockerfile
           # Constrói a imagem, mas só publica se o evento NÃO for um pull request
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}

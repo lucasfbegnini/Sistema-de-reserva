@@ -1,16 +1,16 @@
-name: build-room-service
+name: build-rooms-service
 
 on:
   push:
     branches: [ main, dev ]
     # Dispara o workflow apenas se houver mudanças na pasta do serviço
     paths:
-      - 'packages/room-service/**'
-      - '.github/workflows/build-room-service.yml'
+      - 'packages/rooms-service/**'
+      - '.github/workflows/build-rooms-service.yml'
   pull_request:
     paths:
-      - 'packages/room-service/**'
-      - '.github/workflows/build-room-service.yml'
+      - 'packages/rooms-service/**'
+      - '.github/workflows/build-rooms-service.yml'
 
 jobs:
   build:
@@ -33,7 +33,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ghcr.io/${{ github.repository_owner }}/room-service
+          images: ghcr.io/${{ github.repository_owner }}/rooms-service
           # Gera tags automaticamente: 'main', 'latest' e o hash do commit
           tags: |
             type=ref,event=branch
@@ -43,7 +43,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: ./packages/rooms-service
-          file: ./packages/room-service/Dockerfile
+          file: ./packages/rooms-service/Dockerfile
           # Constrói a imagem, mas só publica se o evento NÃO for um pull request
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}

@@ -1,5 +1,7 @@
 -- Cria a extensão citext (para emails case-insensitive, como recomendado)
 -- Ela é criada no schema 'public' por padrão.
+--CREATE DATABASE sistema_reserva;
+\connect sistema_reserva;
 CREATE EXTENSION IF NOT EXISTS citext;
 
 -- Cria schemas separados para cada microserviço, garantindo isolamento lógico.
@@ -15,4 +17,4 @@ CREATE SCHEMA IF NOT EXISTS notifications;
 -- Isso garante que as extensões no schema public (como citext) sejam encontradas
 -- pelos schemas dos microserviços, resolvendo o 'Ponto crítico identificado' do guia
 -- ATENÇÃO: Se o seu serviço já configura o search_path via TypeORM (como recomendado pelo guia), este passo pode ser redundante, mas é uma segurança.
-ALTER ROLE ${POSTGRES_USER} SET search_path TO "$user", public;
+ALTER ROLE admin SET search_path TO "$user", public;

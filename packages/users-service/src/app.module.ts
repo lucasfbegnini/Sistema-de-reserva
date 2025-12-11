@@ -20,7 +20,7 @@ import { UsersModule } from './users/users.module';
       synchronize: true, // Use false em produção
 
       extra:{
-        options: `-c search_path=${process.env.USERSSCHEMA}, public`
+        options: `-c search_path=${process.env.USERSSCHEMA},public`
       }
 
       //migrationsRun: true,

@@ -20,7 +20,7 @@ import { ResourcesModule } from './resources/resources.module';
       synchronize: true, // Use false em produção
 
       extra:{
-        options: `-c search_path=${process.env.RESOURCESSCHEMA}, public`
+        options: `-c search_path=${process.env.RESOURCESSCHEMA},public`
       }
 
       //migrationsRun: true,

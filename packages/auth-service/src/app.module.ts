@@ -20,7 +20,7 @@ import { AuthModule } from './auth/auth.module';
       synchronize: true, // Use false em produção
 
       extra:{
-        options: `-c search_path=${process.env.AUTSCHEMA}, public`
+        options: `-c search_path=${process.env.AUTSCHEMA},public`
       }
 
       //migrationsRun: true,
